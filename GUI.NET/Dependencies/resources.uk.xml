@@ -43,6 +43,8 @@
 			<Control ID="mnuScale2x">2x</Control>
 			<Control ID="mnuScale3x">3x</Control>
 			<Control ID="mnuScale4x">4x</Control>
+			<Control ID="mnuScale5x">5x</Control>
+			<Control ID="mnuScale6x">6x</Control>
 			<Control ID="mnuFullscreen">Повний екран</Control>
 			<Control ID="mnuVideoFilter">Фільтр зображення</Control>
 			<Control ID="mnuNoneFilter">Немає</Control>
@@ -114,6 +116,7 @@
 			<Control ID="lblSoundChips">Звукові чіпи</Control>
 			<Control ID="lblRecording">REC</Control>
 			<Control ID="lblSlowMotion">Сповільнений Рух</Control>
+			<Control ID="lblRewinding">Rewinding</Control>
 			<Control ID="lblFastForward">Перемотування Вперед</Control>
 		</Form>
 		<Form ID="frmLogWindow" Title="Лог">
@@ -217,6 +220,12 @@
 			<Control ID="lblDisplayPosition">Позиція :</Control>
 			<Control ID="chkDisplayInputHorizontally">Відображати горизонтально</Control>
 
+			<Control ID="lblSmall">Малий</Control>
+			<Control ID="lblLarge">Великий</Control>
+			<Control ID="lblDeadzone">Controller axis deadzone size:</Control>
+			
+			<Control ID="chkHideMousePointerForZapper">Hide mouse pointer when using zapper</Control>
+
 			<Control ID="lblKeyBinding">Увага: Ваша поточна конфігурація містить конфліктуючі поєднання клавіш - деякі фізичні кнопки на вашому ключовому словнику або геймпадi відображаються на кількох кнопках на контролері NES. Якщо це не навмисне, перегляньте та виправте ключi.</Control>
 		</Form>
 		<Form ID="frmVideoConfig" Title="Налаштування вiдео">
@@ -279,6 +288,8 @@
 
 			<Control ID="tpgAdvanced">Розширенi</Control>
 			<Control ID="lblScreenRotation">Обертання екрана:</Control>
+			<Control ID="chkRemoveSpriteLimit">Відключити ліміт спрайтів (зменшує мерехтіння)</Control>
+			<Control ID="chkAdaptiveSpriteLimit">Автоматичне повторне ввімкнення обмеження спрайтiв якщо потрібно щоб зменшити проблеми з графікою</Control>
 			<Control ID="chkDisableBackground">Вимкнути фон</Control>
 			<Control ID="chkDisableSprites">Вимкнути спрайти</Control>
 			<Control ID="chkForceBackgroundFirstColumn">Примусове відображення фону в першому стовпчику</Control>
@@ -297,11 +308,11 @@
 			<Control ID="lblRewindSpeed">Швидкість перемотування:</Control>
 
 			<Control ID="tpgAdvanced">Розширені</Control>
+			<Control ID="lblDeveloperSettings">Recommended settings for developers (homebrew / ROM hacking)</Control>
+			<Control ID="lblMiscSettings">Різнi настройки</Control>
 			<Control ID="chkUseAlternativeMmc3Irq">Використовувати альтернативний IRQ MMC3</Control>
 			<Control ID="chkAllowInvalidInput">Дозволити неприпустимі комбінації (Вниз+Вгору і Ліворуч+Вправо)</Control>
 			<Control ID="lblRamPowerOnState">Вміст ОЗУ при включенні : </Control>
-			<Control ID="chkRemoveSpriteLimit">Відключити ліміт спрайтів (зменшує мерехтіння)</Control>
-			<Control ID="chkAdaptiveSpriteLimit">Автоматичне повторне ввімкнення обмеження спрайтiв якщо потрібно щоб зменшити проблеми з графікою</Control>
 			<Control ID="chkEnableOamDecay">Увімкнути емуляцію погіршення пам'яті OAM</Control>
 			<Control ID="chkDisablePpu2004Reads">Запобігання ведення реєстру PPU $2004 (Famicom)</Control>
 			<Control ID="chkDisableOamAddrBug">Вимкнути емуляцію помилок OAMADDR з PPU</Control>
@@ -533,7 +544,7 @@
 		</Form>
 		<Form ID="frmAbout" Title="Про програму">
 			<Control ID="labelProductName">Mesen</Control>
-			<Control ID="labelCopyright">© 2018 M. Bibaud (aka Sour)</Control>
+			<Control ID="labelCopyright">© 2019 M. Bibaud (aka Sour)</Control>
 			<Control ID="lblWebsite">Сайт:</Control>
 			<Control ID="lblLink">www.mesen.ca</Control>
 			<Control ID="labelVersion">Версiя:</Control>
@@ -596,8 +607,24 @@
 			<Control ID="mnuFile">Файл</Control>
 			<Control ID="mnuImportMovie">Імпортувати відео</Control>
 			<Control ID="mnuExportMovie">Експортувати вiдео</Control>
+			<Control ID="mnuCreateSaveState">Create Save State</Control>
 			<Control ID="mnuResumeGameplay">Відновити геймплей</Control>
 			<Control ID="mnuClose">Закрити</Control>
+
+			<Control ID="mnuOptions">Опції</Control>
+			<Control ID="mnuVideoScale">Розмір екрану</Control>
+			<Control ID="mnuScale1x">1x</Control>
+			<Control ID="mnuScale2x">2x</Control>
+			<Control ID="mnuScale3x">3x</Control>
+			<Control ID="mnuScale4x">4x</Control>
+			<Control ID="mnuScale5x">5x</Control>
+			<Control ID="mnuScale6x">6x</Control>
+		</Form>
+		<Form ID="frmSelectExportRange" Title="Export specific range...">
+			<Control ID="lblStartTime">Start time:</Control>
+			<Control ID="lblEndTime">End time:</Control>
+			<Control ID="btnOK">ОК</Control>
+			<Control ID="btnCancel">Вiдмiна</Control>
 		</Form>
 		<Form ID="frmHelp" Title="Параметри командного рядка">
 			<Control ID="grpExample">Приклад використання</Control>
@@ -606,7 +633,6 @@
 			<Control ID="tpgAudioOptions">Аудiо Опцiї</Control>
 			<Control ID="tpgEmulationOptions">Опцiї Эмуляцiї</Control>
 			<Control ID="lblExplanation">Це запустить Mesen у повноекранному режимi з "MyGame.nes" завантаженим ромом.  Вiн також буде використовувати фiльтр NTSC, встановлений у 2x масштабi та налаштує параметри Overscan. Прапор "DoNotSaveSettings" використовується для запобігання перемикання командного рядка від випадкової зміни налаштувань Mesen.</Control>
-			<Control ID="txtGeneralOptions">/fullscreen - Запустити Mesen у повноекранному режимi&#13;&#10;/DoNotSaveSettings - Заборонити збереження налаштувань на диску (корисно щоб запобігти становленню параметрів командного рядка за замовчуванням)</Control>
 		</Form>
 		<Form ID="frmCopyFiles" Title="Будь ласка зачекайте...">
 			<Control ID="lblCopying">Копіювання:</Control>
@@ -743,7 +769,10 @@
 		<Message ID="SaveToFile">Зберегти в файл...</Message>
 
 		<Message ID="MovieSegment">Сегмент #{0}</Message>
+		<Message ID="MovieExportEntireSegment">Export entire segment</Message>
+		<Message ID="MovieExportSpecificRange">Export specific range...</Message>
 		<Message ID="MovieSaveError">Сталася помилка під час спроби зберегти відео файл.</Message>
+		<Message ID="FileSaveError">An error occurred while trying to save the file.</Message>
 
 		<Message ID="ClearHistory">Очистити історію</Message>
 		<Message ID="LastFolderUsed">Використовувана остання папка</Message>
@@ -751,6 +780,11 @@
 		<Message ID="MouseModeEnabled">Mouse mode enabled - press ESC or pause to release the cursor.</Message>
 		<Message ID="BandaiMicrophone">Bandai Microphone</Message>
 		<Message ID="DatachBarcodeReader">Datach Barcode Reader</Message>
+
+		<Message ID="HelpFullscreen">/fullscreen - Запустити Mesen у повноекранному режимi</Message>
+		<Message ID="HelpDoNotSaveSettings">/DoNotSaveSettings - Заборонити збереження налаштувань на диску (корисно щоб запобігти становленню параметрів командного рядка за замовчуванням)</Message>
+		<Message ID="HelpRecordMovie">/RecordMovie="filename.mmo" - Start recording a movie after the specified game is loaded.</Message>
+		<Message ID="HelpLoadLastSession">/LoadLastSession - Resumes the game in the state it was left in when it was last played.</Message>
 
 		<Message ID="Resume">Продовжити</Message>
 		<Message ID="Pause">Пауза</Message>

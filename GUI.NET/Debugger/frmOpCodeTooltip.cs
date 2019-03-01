@@ -16,6 +16,7 @@ namespace Mesen.GUI.Debugger
 	public partial class frmOpCodeTooltip : TooltipForm
 	{
 		static private Dictionary<string, OpCodeDesc> _descriptions;
+		private OpCodeDesc _desc;
 
 		protected override bool ShowWithoutActivation
 		{
@@ -108,21 +109,11 @@ namespace Mesen.GUI.Debugger
 			_parentForm = parent;
 			InitializeComponent();
 
-			OpCodeDesc desc = _descriptions[opcode.ToLowerInvariant()];
+			_desc = _descriptions[opcode.ToLowerInvariant()];
 
 			if(relativeAddress >= 0) {
 				byte opCode = InteropEmu.DebugGetMemoryValue(DebugMemoryType.CpuMemory, (UInt32)relativeAddress);
-
-				int opSize = 1;
-				switch(AddressingModes[opCode]) {
-					case AddrMode.Abs: case AddrMode.AbsX: case AddrMode.AbsXW: case AddrMode.AbsY: case AddrMode.AbsYW: case AddrMode.Ind:
-						opSize = 3;
-						break;
-
-					case AddrMode.Imm: case AddrMode.IndX: case AddrMode.IndY: case AddrMode.IndYW: case AddrMode.Rel: case AddrMode.Zero: case AddrMode.ZeroX: case AddrMode.ZeroY:
-						opSize = 2;
-						break;
-				}
+				int opSize = GetOpSize(opCode);
 
 				string byteCode = "";
 				for(int i = 0; i < opSize; i++) {
@@ -147,15 +138,8 @@ namespace Mesen.GUI.Debugger
 			ctrlFlagOverflow.Letter = "V";
 			ctrlFlagZero.Letter = "Z";
 
-			lblName.Text = desc.Name;
-			lblOpCodeDescription.Text = desc.Description;
-
-			ctrlFlagCarry.Active = desc.Flags.HasFlag(CpuFlag.Carry);
-			ctrlFlagDecimal.Active = desc.Flags.HasFlag(CpuFlag.Decimal);
-			ctrlFlagInterrupt.Active = desc.Flags.HasFlag(CpuFlag.Interrupt);
-			ctrlFlagNegative.Active = desc.Flags.HasFlag(CpuFlag.Negative);
-			ctrlFlagOverflow.Active = desc.Flags.HasFlag(CpuFlag.Overflow);
-			ctrlFlagZero.Active = desc.Flags.HasFlag(CpuFlag.Zero);
+			lblName.Text = _desc.Name;
+			lblOpCodeDescription.Text = _desc.Description;
 
 			this.TopLevel = false;
 			this.Parent = _parentForm;
@@ -164,11 +148,33 @@ namespace Mesen.GUI.Debugger
 
 		protected override void OnLoad(EventArgs e)
 		{
-			this.Width = this.tlpMain.Width;
 			this.Height = this.tlpMain.Height;
 			this.BringToFront();
 
 			base.OnLoad(e);
+
+			panel.BackColor = ThemeHelper.IsDark ? ThemeHelper.Theme.FormBgColor : SystemColors.Info;
+			ctrlFlagCarry.Active = _desc.Flags.HasFlag(CpuFlag.Carry);
+			ctrlFlagDecimal.Active = _desc.Flags.HasFlag(CpuFlag.Decimal);
+			ctrlFlagInterrupt.Active = _desc.Flags.HasFlag(CpuFlag.Interrupt);
+			ctrlFlagNegative.Active = _desc.Flags.HasFlag(CpuFlag.Negative);
+			ctrlFlagOverflow.Active = _desc.Flags.HasFlag(CpuFlag.Overflow);
+			ctrlFlagZero.Active = _desc.Flags.HasFlag(CpuFlag.Zero);
+		}
+
+		public static int GetOpSize(byte opCode)
+		{
+			int opSize = 1;
+			switch(AddressingModes[opCode]) {
+				case AddrMode.Abs: case AddrMode.AbsX: case AddrMode.AbsXW: case AddrMode.AbsY: case AddrMode.AbsYW: case AddrMode.Ind:
+					opSize = 3;
+					break;
+
+				case AddrMode.Imm: case AddrMode.IndX: case AddrMode.IndY: case AddrMode.IndYW: case AddrMode.Rel: case AddrMode.Zero: case AddrMode.ZeroX: case AddrMode.ZeroY:
+					opSize = 2;
+					break;
+			}
+			return opSize;
 		}
 
 		[Flags]
@@ -196,7 +202,7 @@ namespace Mesen.GUI.Debugger
 			AbsX, AbsXW, AbsY, AbsYW
 		}
 
-		private AddrMode[] AddressingModes = new AddrMode[256] {
+		private static AddrMode[] AddressingModes = new AddrMode[256] {
 			AddrMode.Imp,  AddrMode.IndX,    AddrMode.None, AddrMode.IndX,    AddrMode.Zero,    AddrMode.Zero,    AddrMode.Zero,    AddrMode.Zero,    AddrMode.Imp,  AddrMode.Imm,  AddrMode.Acc,  AddrMode.Imm,  AddrMode.Abs,  AddrMode.Abs,  AddrMode.Abs,  AddrMode.Abs,
 			AddrMode.Rel,  AddrMode.IndY,    AddrMode.None, AddrMode.IndYW,   AddrMode.ZeroX,   AddrMode.ZeroX,   AddrMode.ZeroX,   AddrMode.ZeroX,   AddrMode.Imp,  AddrMode.AbsY, AddrMode.Imp,  AddrMode.AbsYW,AddrMode.AbsX, AddrMode.AbsX, AddrMode.AbsXW,AddrMode.AbsXW,
 			AddrMode.Abs,  AddrMode.IndX,    AddrMode.None, AddrMode.IndX,    AddrMode.Zero,    AddrMode.Zero,    AddrMode.Zero,    AddrMode.Zero,    AddrMode.Imp,  AddrMode.Imm,  AddrMode.Acc,  AddrMode.Imm,  AddrMode.Abs,  AddrMode.Abs,  AddrMode.Abs,  AddrMode.Abs,
@@ -215,7 +221,7 @@ namespace Mesen.GUI.Debugger
 			AddrMode.Rel,  AddrMode.IndY,    AddrMode.None, AddrMode.IndYW,   AddrMode.ZeroX,   AddrMode.ZeroX,   AddrMode.ZeroX,   AddrMode.ZeroX,   AddrMode.Imp,  AddrMode.AbsY, AddrMode.Imp,  AddrMode.AbsYW,AddrMode.AbsX, AddrMode.AbsX, AddrMode.AbsXW,AddrMode.AbsXW,
 		};
 
-		private int[] OpCycles = new int[256] {
+		public static readonly int[] OpCycles = new int[256] {
 			7, 6, 2, 8, 3, 3, 5, 5, 3, 2, 2, 2, 4, 4, 6, 6,
 			2, 5, 2, 8, 4, 4, 6, 6, 2, 4, 2, 7, 4, 4, 7, 7,
 			6, 6, 2, 8, 3, 3, 5, 5, 4, 2, 2, 2, 4, 4, 6, 6,

@@ -85,6 +85,8 @@ bool RomLoader::LoadFile(string filename, vector<uint8_t> &fileData)
 			_romData.Info.System = GameSystem::NesPal;
 		} else if(name.find("(vs)") != string::npos) {
 			_romData.Info.System = GameSystem::VsSystem;
+		} else {
+			_romData.Info.System = GameSystem::NesNtsc;
 		}
 	}
 
@@ -96,7 +98,7 @@ RomData RomLoader::GetRomData()
 	return _romData;
 }
 
-string RomLoader::FindMatchingRomInFile(string filePath, HashInfo hashInfo)
+string RomLoader::FindMatchingRomInFile(string filePath, HashInfo hashInfo, int &iterationCount)
 {
 	shared_ptr<ArchiveReader> reader = ArchiveReader::GetReader(filePath);
 	if(reader) {
@@ -106,6 +108,11 @@ string RomLoader::FindMatchingRomInFile(string filePath, HashInfo hashInfo)
 			if(loader.LoadFile(filePath)) {
 				if(hashInfo.Crc32 == loader._romData.Info.Hash.Crc32 || hashInfo.Sha1.compare(loader._romData.Info.Hash.Sha1) == 0) {
 					return VirtualFile(filePath, file);
+				}
+				
+				iterationCount++;
+				if(iterationCount > RomLoader::MaxFilesToCheck) {
+					break;
 				}
 			}
 		}
@@ -117,12 +124,14 @@ string RomLoader::FindMatchingRomInFile(string filePath, HashInfo hashInfo)
 				return filePath;
 			}
 		}
+		iterationCount++;
 	}
 	return "";
 }
 
 string RomLoader::FindMatchingRom(vector<string> romFiles, string romFilename, HashInfo hashInfo, bool useFastSearch)
 {
+	int iterationCount = 0;
 	if(useFastSearch) {
 		string lcRomFile = romFilename;
 		std::transform(lcRomFile.begin(), lcRomFile.end(), lcRomFile.begin(), ::tolower);
@@ -131,8 +140,8 @@ string RomLoader::FindMatchingRom(vector<string> romFiles, string romFilename, H
 			//Quick search by filename
 			string lcCurrentFile = currentFile;
 			std::transform(lcCurrentFile.begin(), lcCurrentFile.end(), lcCurrentFile.begin(), ::tolower);
-			if(FolderUtilities::GetFilename(lcRomFile, false).compare(FolderUtilities::GetFilename(lcCurrentFile, false)) == 0) {
-				string match = RomLoader::FindMatchingRomInFile(currentFile, hashInfo);
+			if(lcCurrentFile.find(lcRomFile) != string::npos && FolderUtilities::GetFilename(lcRomFile, true) == FolderUtilities::GetFilename(lcCurrentFile, true)) {
+				string match = RomLoader::FindMatchingRomInFile(currentFile, hashInfo, iterationCount);
 				if(!match.empty()) {
 					return match;
 				}
@@ -141,9 +150,15 @@ string RomLoader::FindMatchingRom(vector<string> romFiles, string romFilename, H
 	} else {
 		for(string romFile : romFiles) {
 			//Slower search by CRC value
-			string match = RomLoader::FindMatchingRomInFile(romFile, hashInfo);
+			string match = RomLoader::FindMatchingRomInFile(romFile, hashInfo, iterationCount);
 			if(!match.empty()) {
 				return match;
+			}
+			iterationCount++;
+
+			if(iterationCount > RomLoader::MaxFilesToCheck) {
+				MessageManager::Log("[RomLoader] Could not find a file matching the specified name/hash after 100 tries, giving up...");
+				break;
 			}
 		}
 	}

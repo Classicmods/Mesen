@@ -51,6 +51,24 @@ namespace Mesen.GUI.Config
 		[ShortcutName("Mark Selection as Unidentified Code/Data")]
 		public XmlKeys MarkAsUnidentified = Keys.Control | Keys.D3;
 
+		[ShortcutName("Go to All")]
+		public XmlKeys GoToAll = Keys.Control | Keys.Oemcomma;
+
+		[ShortcutName("PPU Viewer: Toggle View")]
+		public XmlKeys PpuViewer_ToggleView = Keys.Control | Keys.Q;
+		[ShortcutName("PPU Viewer: Toggle Zoom")]
+		public XmlKeys PpuViewer_ToggleZoom = Keys.Control | Keys.W;
+
+		[ShortcutName("Nametable Viewer: Add breakpoint (Tile)")]
+		public XmlKeys PpuViewer_AddBreakpointTile = Keys.F9;
+		[ShortcutName("Nametable Viewer: Add breakpoint (Attribute)")]
+		public XmlKeys PpuViewer_AddBreakpointAttribute = Keys.F10;
+
+		[ShortcutName("Edit in Memory Viewer")]
+		public XmlKeys CodeWindow_EditInMemoryViewer = Keys.F1;
+		[ShortcutName("View in disassembly")]
+		public XmlKeys MemoryViewer_ViewInDisassembly = Keys.None;
+
 		[ShortcutName("Open APU Viewer")]
 		public XmlKeys OpenApuViewer = Keys.Control | Keys.U;
 		[ShortcutName("Open Assembler")]
@@ -63,12 +81,25 @@ namespace Mesen.GUI.Config
 		public XmlKeys OpenMemoryTools = Keys.Control | Keys.M;
 		[ShortcutName("Open PPU Viewer")]
 		public XmlKeys OpenPpuViewer = Keys.Control | Keys.P;
+		[ShortcutName("Open Performance Profiler")]
+		public XmlKeys OpenProfiler = Keys.Control | Keys.Y;
 		[ShortcutName("Open Script Window")]
 		public XmlKeys OpenScriptWindow = Keys.Control | Keys.N;
 		[ShortcutName("Open Trace Logger")]
 		public XmlKeys OpenTraceLogger = Keys.Control | Keys.J;
 		[ShortcutName("Open Text Hooker")]
 		public XmlKeys OpenTextHooker = Keys.Control | Keys.H;
+		[ShortcutName("Open Watch Window")]
+		public XmlKeys OpenWatchWindow = Keys.Control | Keys.W;
+
+		[ShortcutName("Open Nametabler Viewer (Compact)")]
+		public XmlKeys OpenNametableViewer = Keys.Control | Keys.D1;
+		[ShortcutName("Open CHR Viewer (Compact)")]
+		public XmlKeys OpenChrViewer = Keys.Control | Keys.D2;
+		[ShortcutName("Open Sprite Viewer (Compact)")]
+		public XmlKeys OpenSpriteViewer = Keys.Control | Keys.D3;
+		[ShortcutName("Open Palette Viewer (Compact)")]
+		public XmlKeys OpenPaletteViewer = Keys.Control | Keys.D4;
 
 		//Debugger window
 		[ShortcutName("Reset")]
@@ -91,6 +122,8 @@ namespace Mesen.GUI.Config
 		[ShortcutName("Step Back")]
 		public XmlKeys StepBack = Keys.Shift | Keys.F10;
 
+		[ShortcutName("Run one CPU Cycle")]
+		public XmlKeys RunCpuCycle = Keys.None;
 		[ShortcutName("Run one PPU Cycle")]
 		public XmlKeys RunPpuCycle = Keys.F6;
 		[ShortcutName("Run one scanline")]
@@ -119,8 +152,8 @@ namespace Mesen.GUI.Config
 		public XmlKeys CodeWindow_EditSubroutine = Keys.F4;
 		[ShortcutName("Code Window: Edit Selected Code")]
 		public XmlKeys CodeWindow_EditSelectedCode = Keys.None;
-		[ShortcutName("Code Window: Edit in Memory Viewer")]
-		public XmlKeys CodeWindow_EditInMemoryViewer = Keys.F1;
+		[ShortcutName("Code Window: Edit Source File (Source View)")]
+		public XmlKeys CodeWindow_EditSourceFile = Keys.F4;
 		[ShortcutName("Code Window: Edit Label")]
 		public XmlKeys CodeWindow_EditLabel = Keys.F2;
 		[ShortcutName("Code Window: Navigate Back")]
@@ -169,6 +202,10 @@ namespace Mesen.GUI.Config
 
 		[ShortcutName("Watch List: Delete")]
 		public XmlKeys WatchList_Delete = Keys.Delete;
+		[ShortcutName("Watch List: Move Up")]
+		public XmlKeys WatchList_MoveUp = Keys.Control | Keys.Up;
+		[ShortcutName("Watch List: Move Down")]
+		public XmlKeys WatchList_MoveDown = Keys.Control | Keys.Down;
 
 		[ShortcutName("Save Rom")]
 		public XmlKeys SaveRom = Keys.Control | Keys.S;
@@ -194,12 +231,10 @@ namespace Mesen.GUI.Config
 		public XmlKeys MemoryViewer_Import = Keys.Control | Keys.O;
 		[ShortcutName("Export")]
 		public XmlKeys MemoryViewer_Export = Keys.Control | Keys.S;
-		[ShortcutName("View in CPU Memory")]
+		[ShortcutName("View in CPU/PPU Memory")]
 		public XmlKeys MemoryViewer_ViewInCpuMemory = Keys.None;
 		[ShortcutName("View in [memory type]")]
 		public XmlKeys MemoryViewer_ViewInMemoryType = Keys.None;
-		[ShortcutName("View in disassembly")]
-		public XmlKeys MemoryViewer_ViewInDisassembly = Keys.None;
 
 		//Script Window
 		[ShortcutName("Open Script")]
@@ -217,7 +252,7 @@ namespace Mesen.GUI.Config
 				return "";
 			} else {
 				string keyString = new KeysConverter().ConvertToString(keys);
-				return keyString.Replace("+None", "").Replace("Oemplus", "+").Replace("Oemtilde", "Tilde").Replace("OemMinus", "-").Replace("Cancel", "Break").Replace("Escape", "Esc");
+				return keyString.Replace("+None", "").Replace("Oemcomma", ",").Replace("Oemplus", "+").Replace("Oemtilde", "Tilde").Replace("OemMinus", "-").Replace("Cancel", "Break").Replace("Escape", "Esc");
 			}
 		}
 		
@@ -257,18 +292,20 @@ namespace Mesen.GUI.Config
 			}
 		}
 
-		private static void ClearProcessCmdKeyHandler(ToolStripMenuItem item, Control parent)
+		public static void ClearProcessCmdKeyHandler(ToolStripMenuItem item, Control parent)
 		{
 			Form parentForm = parent.FindForm();
 			if(parentForm is BaseForm) {
-				(parentForm as BaseForm).OnProcessCmdKey -= (ProcessCmdKeyHandler)item.Tag;
+				(parentForm as BaseForm).OnProcessCmdKey -= ((ShortcutInfo)item.Tag).KeyHandler;
 			}
-			item.Tag = null;
+			((ShortcutInfo)item.Tag).KeyHandler = null;
 		}
 
 		public static void UpdateShortcutItem(ToolStripMenuItem item, Control parent, string fieldName)
 		{
-			if(item.Tag is ProcessCmdKeyHandler) {
+			if(item.Tag == null) {
+				item.Tag = new ShortcutInfo() { KeyHandler = null, ShortcutKey = fieldName };
+			} else if(((ShortcutInfo)item.Tag).KeyHandler != null) {
 				ClearProcessCmdKeyHandler(item, parent);
 			}
 
@@ -280,15 +317,14 @@ namespace Mesen.GUI.Config
 
 				Form parentForm = parent.FindForm();
 				if(parentForm is BaseForm) {
-					ProcessCmdKeyHandler onProcessCmdKeyHandler = (Keys keyData) => {
-						if(parent.ContainsFocus && keyData == keys) {
+					ProcessCmdKeyHandler onProcessCmdKeyHandler = (Keys keyData, ref bool processed) => {
+						if(!processed && item.Enabled && parent.ContainsFocus && keyData == keys) {
 							item.PerformClick();
-							return true;
+							processed = true;
 						}
-						return false;
 					};
 
-					item.Tag = onProcessCmdKeyHandler;
+					((ShortcutInfo)item.Tag).KeyHandler = onProcessCmdKeyHandler;
 					(parentForm as BaseForm).OnProcessCmdKey += onProcessCmdKeyHandler;
 				}
 			} else {
@@ -305,6 +341,12 @@ namespace Mesen.GUI.Config
 			DebuggerShortcutsConfig.UpdateShortcutItem(item, parent, fieldName);
 			DebuggerShortcutsConfig.RegisterMenuItem(item, parent, fieldName);
 		}
+	}
+
+	public class ShortcutInfo
+	{
+		public string ShortcutKey;
+		public ProcessCmdKeyHandler KeyHandler;
 	}
 
 	public class XmlKeys

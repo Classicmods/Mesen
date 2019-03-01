@@ -97,3 +97,18 @@ address - *Integer* A PPU address (Valid range: $0000-$3FFF)
 **Description**  
 Returns an integer representing the byte offset of the specified PPU address in CHR ROM based on the mapper's current configuration. Returns -1 when the specified address is not mapped to CHR ROM.
 
+## getLabelAddress ##
+
+**Syntax**  
+
+    emu.getLabelAddress(label)
+
+**Parameters**  
+label - *String* The label to look up
+
+**Return value**  
+*Integer* The corresponding CPU address
+
+**Description**  
+Returns the address of the specified label. This address can be used with the memory read/write functions (`read()`, `readWord()`, `write()`, `writeWord()`) using the `emu.memType.cpu` or `emu.memType.cpuDebug` memory types.
+

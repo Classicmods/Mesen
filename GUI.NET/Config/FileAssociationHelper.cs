@@ -87,8 +87,17 @@ namespace Mesen.GUI.Config
 			CreateShortcutFile(desktopFile, mimeTypes);
 
 			//Update databases
-			System.Diagnostics.Process.Start("update-mime-database", mimeFolder).WaitForExit();
-			System.Diagnostics.Process.Start("update-desktop-database", desktopFolder);
+			try {
+				System.Diagnostics.Process.Start("update-mime-database", mimeFolder).WaitForExit();
+				System.Diagnostics.Process.Start("update-desktop-database", desktopFolder);
+			} catch {
+				try {
+					InteropEmu.WriteLogEntry("An error occurred while updating file associations");
+				} catch {
+					//For some reason, Mono crashes when trying to call this if libMesenCore.dll was not already next to the .exe before the process starts?
+					//This causes a "MesenCore.dll not found" popup, so catch it here and ignore it.
+				}
+			}
 		}
 
 		static public void CreateShortcutFile(string filename, List<string> mimeTypes = null)

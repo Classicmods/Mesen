@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using Mesen.GUI.Config;
 using System.Globalization;
+using System.Text.RegularExpressions;
 
 namespace Mesen.GUI.Debugger.Controls
 {
@@ -16,16 +17,19 @@ namespace Mesen.GUI.Debugger.Controls
 	{
 		public event SetNextStatementEventHandler OnSetNextStatement;
 		public event ShowInSplitViewEventHandler OnShowInSplitView;
+		public event ShowInSplitViewEventHandler OnGoToDestination;
 		public event SwitchToSourceEventHandler OnSwitchView;
 
 		private int _lastClickedAddress = Int32.MaxValue;
+		private Ld65DbgImporter.SymbolInfo _lastClickedSymbol = null;
+		private CodeLabel _lastClickedLabel = null;
 		private string _newWatchValue = string.Empty;
 		private string _lastWord = string.Empty;
 		private Point _lastLocation = Point.Empty;
 		private DebugViewInfo _config;
 
 		public ICodeViewer Viewer { get; set; }
-		public bool SourceView { get; set; }
+		public bool IsSourceView { get; private set; }
 
 		public CodeViewerActions()
 		{
@@ -35,7 +39,7 @@ namespace Mesen.GUI.Debugger.Controls
 		public CodeViewerActions(ICodeViewer viewer, bool isSourceView) : this()
 		{
 			Viewer = viewer;
-			SourceView = isSourceView;
+			IsSourceView = isSourceView;
 
 			this.InitShortcuts();
 		}
@@ -54,7 +58,7 @@ namespace Mesen.GUI.Debugger.Controls
 
 			mnuSwitchView.InitShortcut(parent, nameof(DebuggerShortcutsConfig.CodeWindow_SwitchView));
 
-			if(!SourceView) {
+			if(!IsSourceView) {
 				mnuNavigateBackward.InitShortcut(parent, nameof(DebuggerShortcutsConfig.CodeWindow_NavigateBack));
 				mnuNavigateForward.InitShortcut(parent, nameof(DebuggerShortcutsConfig.CodeWindow_NavigateForward));
 
@@ -64,6 +68,8 @@ namespace Mesen.GUI.Debugger.Controls
 				mnuMarkAsCode.InitShortcut(parent, nameof(DebuggerShortcutsConfig.MarkAsCode));
 				mnuMarkAsData.InitShortcut(parent, nameof(DebuggerShortcutsConfig.MarkAsData));
 				mnuMarkAsUnidentifiedData.InitShortcut(parent, nameof(DebuggerShortcutsConfig.MarkAsUnidentified));
+			} else {
+				mnuEditSourceFile.InitShortcut(parent, nameof(DebuggerShortcutsConfig.CodeWindow_EditSourceFile));
 			}
 		}
 
@@ -140,7 +146,7 @@ namespace Mesen.GUI.Debugger.Controls
 
 		private void contextMenuCode_Opening(object sender, CancelEventArgs e)
 		{
-			UpdateContextMenuItemVisibility(true);
+			UpdateContextMenuItemVisibility(contextMenu.Items);
 
 			int startAddress, endAddress;
 			string range;
@@ -210,9 +216,27 @@ namespace Mesen.GUI.Debugger.Controls
 			GoToLocation();
 		}
 
+		public void GoToDestination(GoToDestination dest)
+		{
+			this.OnGoToDestination?.Invoke(Viewer, dest);
+		}
+
+		private GoToDestination GetDestination()
+		{
+			Ld65DbgImporter.ReferenceInfo definitionInfo = _lastClickedSymbol != null ? Viewer.SymbolProvider?.GetSymbolDefinition(_lastClickedSymbol) : null;
+			AddressTypeInfo addressInfo = _lastClickedSymbol != null ? Viewer.SymbolProvider?.GetSymbolAddressInfo(_lastClickedSymbol) : null;
+			return new GoToDestination() {
+				CpuAddress = _lastClickedAddress >= 0 ? _lastClickedAddress : (addressInfo != null ? InteropEmu.DebugGetRelativeAddress((UInt32)addressInfo.Address, addressInfo.Type) : -1),
+				Label = _lastClickedLabel,
+				AddressInfo = addressInfo,
+				File = definitionInfo?.FileName,
+				Line = definitionInfo?.LineNumber ?? 0
+			};
+		}
+
 		private void GoToLocation()
 		{
-			Viewer.ScrollToLineNumber((int)_lastClickedAddress);
+			GoToDestination(GetDestination());
 		}
 
 		private void mnuAddToWatch_Click(object sender, EventArgs e)
@@ -232,16 +256,27 @@ namespace Mesen.GUI.Debugger.Controls
 
 		private void ShowInSplitView()
 		{
-			this.OnShowInSplitView?.Invoke(Viewer, new AddressEventArgs() { Address = (UInt32)_lastClickedAddress });
+			this.OnShowInSplitView?.Invoke(Viewer, GetDestination());
 		}
 		
 		private void mnuEditLabel_Click(object sender, EventArgs e)
 		{
 			if(UpdateContextMenu(_lastLocation)) {
-				AddressTypeInfo info = new AddressTypeInfo();
-				InteropEmu.DebugGetAbsoluteAddressAndType((UInt32)_lastClickedAddress, info);
-				if(info.Address >= 0) {
-					ctrlLabelList.EditLabel((UInt32)info.Address, info.Type);
+				if(_lastClickedAddress >= 0) {
+					AddressTypeInfo info = new AddressTypeInfo();
+					InteropEmu.DebugGetAbsoluteAddressAndType((UInt32)_lastClickedAddress, info);
+					if(info.Address >= 0) {
+						ctrlLabelList.EditLabel((UInt32)info.Address, info.Type);
+					} else {
+						ctrlLabelList.EditLabel((UInt32)_lastClickedAddress, AddressType.Register);
+					}
+				} else if(_lastClickedLabel != null) {
+					ctrlLabelList.EditLabel(_lastClickedLabel.Address, _lastClickedLabel.AddressType);
+				} else if(_lastClickedSymbol != null) {
+					AddressTypeInfo info = Viewer.SymbolProvider.GetSymbolAddressInfo(_lastClickedSymbol);
+					if(info != null && info.Address >= 0) {
+						ctrlLabelList.EditLabel((UInt32)info.Address, info.Type);
+					}
 				}
 			}
 		}
@@ -263,10 +298,16 @@ namespace Mesen.GUI.Debugger.Controls
 
 		public void ToggleBreakpoint(bool toggleEnabledFlag)
 		{
-			int relativeAddress = Viewer.CodeViewer.CurrentLine;
 			AddressTypeInfo info = Viewer.GetAddressInfo(Viewer.CodeViewer.SelectedLine);
+			if(info.Address < 0) {
+				//Current line has no address, try using the next line instead.
+				//(Used when trying to set a breakpoint on a row containing only a label)
+				info = Viewer.GetAddressInfo(Viewer.CodeViewer.SelectedLine + 1);
+			}
 
-			BreakpointManager.ToggleBreakpoint(relativeAddress, info, toggleEnabledFlag);
+			if(info.Address >= 0) {
+				BreakpointManager.ToggleBreakpoint(info, toggleEnabledFlag);
+			}
 		}
 
 		private void mnuShowByteCodeOnLeft_Click(object sender, EventArgs e)
@@ -342,7 +383,16 @@ namespace Mesen.GUI.Debugger.Controls
 
 		private void mnuFindOccurrences_Click(object sender, EventArgs e)
 		{
-			Viewer.FindAllOccurrences(_lastWord, true, true);
+			FindOccurrences();
+		}
+
+		private void FindOccurrences()
+		{
+			if(_lastClickedSymbol != null) {
+				Viewer.FindAllOccurrences(_lastClickedSymbol);
+			} else {
+				Viewer.FindAllOccurrences(_lastWord, true, true);
+			}
 		}
 
 		private void mnuUndoPrgChrEdit_Click(object sender, EventArgs e)
@@ -361,6 +411,11 @@ namespace Mesen.GUI.Debugger.Controls
 			this.OnSetNextStatement?.Invoke(new AddressEventArgs() { Address = (UInt32)Viewer.CodeViewer.CurrentLine });
 		}
 
+		private void mnuEditSourceFile_Click(object sender, EventArgs e)
+		{
+			Viewer.EditSourceFile();
+		}
+
 		private void mnuEditSubroutine_Click(object sender, EventArgs e)
 		{
 			Viewer.EditSubroutine();
@@ -374,15 +429,20 @@ namespace Mesen.GUI.Debugger.Controls
 		private void mnuEditInMemoryViewer_Click(object sender, EventArgs e)
 		{
 			if(UpdateContextMenu(_lastLocation)) {
-				DebugWindowManager.OpenMemoryViewer(_lastClickedAddress, DebugMemoryType.CpuMemory);
+				DebugWindowManager.OpenMemoryViewer(GetDestination());
 			}
 		}
 
 		private void mnuSwitchView_Click(object sender, EventArgs e)
 		{
 			if(Viewer.SymbolProvider != null) {
-				this.OnSwitchView?.Invoke(Viewer);
+				this.SwitchView();
 			}
+		}
+
+		public void SwitchView()
+		{
+			this.OnSwitchView?.Invoke(Viewer);
 		}
 
 		public void ProcessMouseUp(Point location, MouseButtons button)
@@ -394,7 +454,7 @@ namespace Mesen.GUI.Debugger.Controls
 					} else if(ModifierKeys.HasFlag(Keys.Control)) {
 						AddWatch();
 					} else if(ModifierKeys.HasFlag(Keys.Alt)) {
-						Viewer.FindAllOccurrences(_lastWord, true, true);
+						FindOccurrences();
 					}
 				}
 			}
@@ -411,67 +471,71 @@ namespace Mesen.GUI.Debugger.Controls
 		{
 			mnuEditSelectedCode.Enabled = true;
 			mnuEditSubroutine.Enabled = true;
+			mnuEditSourceFile.Enabled = true;
 		}
 
-		public void UpdateContextMenuItemVisibility(bool? visible = null)
+		public void UpdateContextMenuItemVisibility(ToolStripItemCollection items)
 		{
-			mnuUndoPrgChrEdit.Enabled = InteropEmu.DebugHasUndoHistory();
-			mnuShowNextStatement.Enabled = Viewer.ActiveAddress.HasValue;
-			mnuSetNextStatement.Enabled = Viewer.ActiveAddress.HasValue;
-			mnuEditSelectedCode.Enabled = mnuEditSubroutine.Enabled = InteropEmu.DebugIsExecutionStopped() && Viewer.CodeViewer.CurrentLine >= 0;
-
-			if(visible.HasValue) {
-				mnuAddToWatch.Visible = visible.Value;
-				mnuEditLabel.Visible = visible.Value;
-				mnuGoToLocation.Visible = visible.Value;
-				mnuToggleBreakpoint.Visible = visible.Value;
-				sepAddToWatch.Visible = visible.Value;
-				sepEditLabel.Visible = visible.Value;
-				mnuFindOccurrences.Visible = visible.Value;
-			}
-
-			if(SourceView) {
-				mnuMarkSelectionAs.Visible = false;
-				mnuShowCodeNotes.Visible = false;
-
-				mnuFindOccurrences.Visible = false;
-				mnuEditSubroutine.Visible = false;
-				mnuEditSelectedCode.Visible = false;
-				mnuNavigateForward.Visible = false;
-				mnuNavigateBackward.Visible = false;
-				mnuEditLabel.Visible = false;
-				sepNavigation.Visible = false;
-				mnuShowSourceAsComments.Visible = false;
-			}
+			items[nameof(mnuUndoPrgChrEdit)].Enabled = InteropEmu.DebugHasUndoHistory();
+			items[nameof(mnuShowNextStatement)].Enabled = Viewer.ActiveAddress.HasValue;
+			items[nameof(mnuSetNextStatement)].Enabled = Viewer.ActiveAddress.HasValue;
+			items[nameof(mnuEditSelectedCode)].Enabled = items[nameof(mnuEditSubroutine)].Enabled = InteropEmu.DebugIsExecutionStopped() && Viewer.CodeViewer.CurrentLine >= 0;
 
 			bool hasSymbolProvider = Viewer.SymbolProvider != null;
-			mnuShowSourceAsComments.Visible = hasSymbolProvider;
-			mnuSwitchView.Visible = hasSymbolProvider;
-			sepSwitchView.Visible = hasSymbolProvider;
+			items[nameof(mnuShowSourceAsComments)].Visible = hasSymbolProvider;
+			items[nameof(mnuSwitchView)].Visible = hasSymbolProvider;
+			items[nameof(sepSwitchView)].Visible = hasSymbolProvider;
+
+			if(IsSourceView) {
+				items[nameof(mnuMarkSelectionAs)].Visible = false;
+
+				items[nameof(mnuEditSubroutine)].Visible = false;
+				items[nameof(mnuEditSelectedCode)].Visible = false;
+				items[nameof(mnuNavigateForward)].Visible = false;
+				items[nameof(mnuNavigateBackward)].Visible = false;
+				items[nameof(mnuEditLabel)].Visible = false;
+				items[nameof(sepNavigation)].Visible = false;
+				items[nameof(mnuShowSourceAsComments)].Visible = false;
+				items[nameof(sepMarkSelectionAs)].Visible = false;
+			} else {
+				items[nameof(mnuEditSourceFile)].Visible = false;
+			}
+
+			AddressTypeInfo addressInfo = Viewer.GetAddressInfo(Viewer.CodeViewer.SelectedLine);
+			if(addressInfo.Address >= 0) {
+				int relAddress = InteropEmu.DebugGetRelativeAddress((uint)addressInfo.Address, addressInfo.Type);
+				items[nameof(mnuPerfTracker)].Text = "Performance Tracker ($" + relAddress.ToString("X4") + ")";
+				items[nameof(mnuPerfTracker)].Enabled = true;
+			} else {
+				items[nameof(mnuPerfTracker)].Text = "Performance Tracker";
+				items[nameof(mnuPerfTracker)].Enabled = false;
+			}
 		}
 
 		private bool UpdateContextMenu(Point mouseLocation)
 		{
 			_lastLocation = mouseLocation;
 
-			UpdateContextMenuItemVisibility(true);
+			UpdateContextMenuItemVisibility(contextMenu.Items);
 
-			mnuSwitchView.Text = SourceView ? "Switch to Disassembly View" : "Switch to Source View";
+			mnuSwitchView.Text = IsSourceView ? "Switch to Disassembly View" : "Switch to Source View";
 
 			string word = Viewer.CodeViewer.GetWordUnderLocation(mouseLocation);
 			Ld65DbgImporter.SymbolInfo symbol = null;
 			CodeLabel codeLabel = null;
 
 			if(!word.StartsWith("$")) {
+				Match arrayMatch = CodeTooltipManager.LabelArrayFormat.Match(word);
+				if(arrayMatch.Success) {
+					word = arrayMatch.Groups[1].Value;
+				}
+
 				codeLabel = LabelManager.GetLabel(word);
 
-				if(Viewer.SymbolProvider != null) {
+				if(Viewer.SymbolProvider != null && IsSourceView) {
 					int rangeStart, rangeEnd;
 					if(Viewer.CodeViewer.GetNoteRangeAtLocation(mouseLocation.Y, out rangeStart, out rangeEnd)) {
 						symbol = Viewer.SymbolProvider.GetSymbol(word, rangeStart, rangeEnd);
-						if(symbol?.SegmentID == null) {
-							symbol = null;
-						}
 					}
 				}
 			}
@@ -483,16 +547,20 @@ namespace Mesen.GUI.Debugger.Controls
 				if(word.StartsWith("$")) {
 					//CPU Address
 					_lastClickedAddress = Int32.Parse(word.Substring(1), NumberStyles.AllowHexSpecifier);
+					_lastClickedSymbol = null;
+					_lastClickedLabel = null;
 					_newWatchValue = "[$" + _lastClickedAddress.ToString("X") + "]";
 				} else if(symbol != null) {
 					//Symbol
-					AddressTypeInfo addressInfo = (AddressTypeInfo)Viewer.SymbolProvider.GetSymbolAddressInfo(symbol);
-					_lastClickedAddress = (Int32)InteropEmu.DebugGetRelativeAddress((uint)addressInfo.Address, addressInfo.Type);
-					bool matchingLabelExists = codeLabel != null && codeLabel.Label == symbol.Name;
-					_newWatchValue = matchingLabelExists ? $"[{word}]" : $"[${_lastClickedAddress.ToString("X2")}]";
+					_lastClickedAddress = -1;
+					_lastClickedLabel = null;
+					_lastClickedSymbol = symbol;
+					_newWatchValue = "[" + word + "]";
 				} else if(codeLabel != null) {
 					//Label
-					_lastClickedAddress = (Int32)InteropEmu.DebugGetRelativeAddress(codeLabel.Address, codeLabel.AddressType);
+					_lastClickedLabel = codeLabel;
+					_lastClickedAddress = -1;
+					_lastClickedSymbol = null;
 					_newWatchValue = "[" + word + "]";
 				}
 
@@ -528,7 +596,9 @@ namespace Mesen.GUI.Debugger.Controls
 				mnuEditLabel.Text = "Edit Label";
 				mnuEditInMemoryViewer.Enabled = false;
 				mnuEditInMemoryViewer.Text = $"Edit in Memory Viewer";
-				
+
+				_lastClickedLabel = null;
+				_lastClickedSymbol = null;
 				if(mouseLocation.X < Viewer.CodeViewer.CodeMargin) {
 					_lastClickedAddress = Viewer.CodeViewer.GetLineNumberAtPosition(mouseLocation.Y);
 				} else {
@@ -556,6 +626,41 @@ namespace Mesen.GUI.Debugger.Controls
 
 				return false;
 			}
+		}
+
+		private void SetPerformanceTracker(PerfTrackerMode mode)
+		{
+			AddressTypeInfo addressInfo = Viewer.GetAddressInfo(Viewer.CodeViewer.SelectedLine);
+			InteropEmu.DebugSetPerformanceTracker(addressInfo.Address, addressInfo.Type, mode);
+		}
+
+		private void mnuPerfTrackerFullscreen_Click(object sender, EventArgs e)
+		{
+			SetPerformanceTracker(PerfTrackerMode.Fullscreen);
+		}
+
+		private void mnuPerfTrackerCompact_Click(object sender, EventArgs e)
+		{
+			SetPerformanceTracker(PerfTrackerMode.Compact);
+		}
+
+		private void mnuPerfTrackerTextOnly_Click(object sender, EventArgs e)
+		{
+			SetPerformanceTracker(PerfTrackerMode.TextOnly);
+		}
+
+		private void mnuPerfTrackerDisabled_Click(object sender, EventArgs e)
+		{
+			SetPerformanceTracker(PerfTrackerMode.Disabled);
+		}
+
+		private void mnuPerfTracker_DropDownOpening(object sender, EventArgs e)
+		{
+			PerfTrackerMode mode = InteropEmu.DebugGetPerformanceTrackerMode();
+			mnuPerfTrackerFullscreen.Checked = mode == PerfTrackerMode.Fullscreen;
+			mnuPerfTrackerCompact.Checked = mode == PerfTrackerMode.Compact;
+			mnuPerfTrackerTextOnly.Checked = mode == PerfTrackerMode.TextOnly;
+			mnuPerfTrackerDisabled.Checked = mode == PerfTrackerMode.Disabled;
 		}
 	}
 }

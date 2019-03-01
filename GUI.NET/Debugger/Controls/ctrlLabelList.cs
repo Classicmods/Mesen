@@ -17,7 +17,7 @@ namespace Mesen.GUI.Debugger.Controls
 	public partial class ctrlLabelList : BaseControl
 	{
 		public event EventHandler OnFindOccurrence;
-		public event EventHandler OnLabelSelected;
+		public event GoToDestinationEventHandler OnLabelSelected;
 
 		private List<ListViewItem> _listItems = new List<ListViewItem>();
 		private int _sortColumn = 0;
@@ -55,16 +55,16 @@ namespace Mesen.GUI.Debugger.Controls
 		public static void EditLabel(UInt32 address, AddressType type)
 		{
 			CodeLabel existingLabel = LabelManager.GetLabel(address, type);
-			CodeLabel newLabel = new CodeLabel() { Address = address, AddressType = type, Label = existingLabel?.Label, Comment = existingLabel?.Comment };
+			CodeLabel newLabel = new CodeLabel() { Address = address, AddressType = type, Label = existingLabel?.Label, Comment = existingLabel?.Comment, Length = existingLabel?.Length ?? 1 };
 
 			frmEditLabel frm = new frmEditLabel(newLabel, existingLabel);
 			if(frm.ShowDialog() == DialogResult.OK) {
 				bool empty = string.IsNullOrWhiteSpace(newLabel.Label) && string.IsNullOrWhiteSpace(newLabel.Comment);
 				if(existingLabel != null) {
-					LabelManager.DeleteLabel(existingLabel.Address, existingLabel.AddressType, empty);
+					LabelManager.DeleteLabel(existingLabel, empty);
 				}
 				if(!empty) {
-					LabelManager.SetLabel(newLabel.Address, newLabel.AddressType, newLabel.Label, newLabel.Comment);
+					LabelManager.SetLabel(newLabel.Address, newLabel.AddressType, newLabel.Label, newLabel.Comment, true, CodeLabelFlags.None, newLabel.Length);
 				}
 			}
 		}
@@ -97,14 +97,14 @@ namespace Mesen.GUI.Debugger.Controls
 					needUpdate = true;
 					if(relativeAddress >= 0) {
 						item.SubItems[1].Text = "$" + relativeAddress.ToString("X4");
-						item.ForeColor = Color.Black;
+						item.ForeColor = ThemeHelper.Theme.LabelForeColor;
 						if(regularFont == null) {
 							regularFont = new Font(item.Font, FontStyle.Regular);
 						}
 						item.Font = regularFont;
 					} else {
 						item.SubItems[1].Text = "[n/a]";
-						item.ForeColor = Color.Gray;
+						item.ForeColor = ThemeHelper.Theme.LabelDisabledForeColor;
 						if(italicFont == null) {
 							italicFont = new Font(item.Font, FontStyle.Italic);
 						}
@@ -132,7 +132,7 @@ namespace Mesen.GUI.Debugger.Controls
 						item.SubItems.Add("$" + relativeAddress.ToString("X4"));
 					} else {
 						item.SubItems.Add("[n/a]");
-						item.ForeColor = Color.Gray;
+						item.ForeColor = ThemeHelper.Theme.LabelDisabledForeColor;
 						if(italicFont == null) {
 							italicFont = new Font(item.Font, FontStyle.Italic);
 						}
@@ -178,10 +178,11 @@ namespace Mesen.GUI.Debugger.Controls
 		{
 			if(lstLabels.SelectedIndices.Count > 0) {
 				Int32 relativeAddress = (Int32)GetSelectedItem().Tag;
-
-				if(relativeAddress >= 0) {
-					OnLabelSelected?.Invoke(relativeAddress, e);
-				}
+				CodeLabel label = (CodeLabel)GetSelectedItem().SubItems[1].Tag;
+				OnLabelSelected?.Invoke(new GoToDestination() {
+					CpuAddress = relativeAddress,
+					Label = label
+				});
 			}
 		}
 		
@@ -220,7 +221,7 @@ namespace Mesen.GUI.Debugger.Controls
 				List<int> selectedIndexes = new List<int>(lstLabels.SelectedIndices.Cast<int>().ToList());
 				for(int i = selectedIndexes.Count - 1; i >= 0; i--) {
 					CodeLabel label = (CodeLabel)_listItems[selectedIndexes[i]].SubItems[1].Tag;
-					LabelManager.DeleteLabel(label.Address, label.AddressType, i == 0);
+					LabelManager.DeleteLabel(label, i == 0);
 				}
 				
 				//Reposition scroll bar and selected/focused item
@@ -244,7 +245,7 @@ namespace Mesen.GUI.Debugger.Controls
 
 			frmEditLabel frm = new frmEditLabel(newLabel);
 			if(frm.ShowDialog() == DialogResult.OK) {
-				LabelManager.SetLabel(newLabel.Address, newLabel.AddressType, newLabel.Label, newLabel.Comment);
+				LabelManager.SetLabel(newLabel.Address, newLabel.AddressType, newLabel.Label, newLabel.Comment, true, CodeLabelFlags.None, newLabel.Length);
 			}
 		}
 

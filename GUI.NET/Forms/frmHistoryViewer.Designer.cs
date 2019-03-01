@@ -33,7 +33,8 @@
 			this.btnPausePlay = new System.Windows.Forms.Button();
 			this.lblPosition = new System.Windows.Forms.Label();
 			this.pnlRenderer = new System.Windows.Forms.Panel();
-			this.tableLayoutPanel2 = new System.Windows.Forms.TableLayoutPanel();
+			this.picNsfIcon = new System.Windows.Forms.PictureBox();
+			this.tlpRenderer = new System.Windows.Forms.TableLayoutPanel();
 			this.ctrlRenderer = new System.Windows.Forms.Panel();
 			this.tableLayoutPanel3 = new System.Windows.Forms.TableLayoutPanel();
 			this.lblVolume = new System.Windows.Forms.Label();
@@ -44,13 +45,23 @@
 			this.mnuImportMovie = new System.Windows.Forms.ToolStripMenuItem();
 			this.mnuExportMovie = new System.Windows.Forms.ToolStripMenuItem();
 			this.toolStripMenuItem1 = new System.Windows.Forms.ToolStripSeparator();
+			this.mnuCreateSaveState = new System.Windows.Forms.ToolStripMenuItem();
 			this.mnuResumeGameplay = new System.Windows.Forms.ToolStripMenuItem();
 			this.toolStripMenuItem2 = new System.Windows.Forms.ToolStripSeparator();
 			this.mnuClose = new System.Windows.Forms.ToolStripMenuItem();
+			this.mnuOptions = new System.Windows.Forms.ToolStripMenuItem();
+			this.mnuVideoScale = new System.Windows.Forms.ToolStripMenuItem();
+			this.mnuScale1x = new System.Windows.Forms.ToolStripMenuItem();
+			this.mnuScale2x = new System.Windows.Forms.ToolStripMenuItem();
+			this.mnuScale3x = new System.Windows.Forms.ToolStripMenuItem();
+			this.mnuScale4x = new System.Windows.Forms.ToolStripMenuItem();
+			this.mnuScale5x = new System.Windows.Forms.ToolStripMenuItem();
+			this.mnuScale6x = new System.Windows.Forms.ToolStripMenuItem();
 			this.tableLayoutPanel1.SuspendLayout();
 			((System.ComponentModel.ISupportInitialize)(this.trkPosition)).BeginInit();
 			this.pnlRenderer.SuspendLayout();
-			this.tableLayoutPanel2.SuspendLayout();
+			((System.ComponentModel.ISupportInitialize)(this.picNsfIcon)).BeginInit();
+			this.tlpRenderer.SuspendLayout();
 			this.tableLayoutPanel3.SuspendLayout();
 			((System.ComponentModel.ISupportInitialize)(this.trkVolume)).BeginInit();
 			this.menuStrip2.SuspendLayout();
@@ -74,16 +85,16 @@
 			this.tableLayoutPanel1.RowCount = 2;
 			this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
 			this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
-			this.tableLayoutPanel1.Size = new System.Drawing.Size(532, 477);
+			this.tableLayoutPanel1.Size = new System.Drawing.Size(256, 249);
 			this.tableLayoutPanel1.TabIndex = 0;
 			// 
 			// trkPosition
 			// 
 			this.trkPosition.Dock = System.Windows.Forms.DockStyle.Top;
 			this.trkPosition.LargeChange = 10;
-			this.trkPosition.Location = new System.Drawing.Point(56, 429);
+			this.trkPosition.Location = new System.Drawing.Point(56, 201);
 			this.trkPosition.Name = "trkPosition";
-			this.trkPosition.Size = new System.Drawing.Size(312, 45);
+			this.trkPosition.Size = new System.Drawing.Size(56, 45);
 			this.trkPosition.TabIndex = 1;
 			this.trkPosition.TickFrequency = 10;
 			this.trkPosition.TickStyle = System.Windows.Forms.TickStyle.Both;
@@ -93,7 +104,7 @@
 			// 
 			this.btnPausePlay.Anchor = System.Windows.Forms.AnchorStyles.Left;
 			this.btnPausePlay.Image = global::Mesen.GUI.Properties.Resources.Play;
-			this.btnPausePlay.Location = new System.Drawing.Point(3, 433);
+			this.btnPausePlay.Location = new System.Drawing.Point(3, 205);
 			this.btnPausePlay.Name = "btnPausePlay";
 			this.btnPausePlay.Size = new System.Drawing.Size(47, 36);
 			this.btnPausePlay.TabIndex = 2;
@@ -103,7 +114,7 @@
 			// 
 			this.lblPosition.Anchor = System.Windows.Forms.AnchorStyles.Right;
 			this.lblPosition.AutoSize = true;
-			this.lblPosition.Location = new System.Drawing.Point(374, 445);
+			this.lblPosition.Location = new System.Drawing.Point(118, 217);
 			this.lblPosition.MinimumSize = new System.Drawing.Size(49, 13);
 			this.lblPosition.Name = "lblPosition";
 			this.lblPosition.Size = new System.Drawing.Size(49, 13);
@@ -116,36 +127,50 @@
 			this.pnlRenderer.BackColor = System.Drawing.Color.Black;
 			this.pnlRenderer.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
 			this.tableLayoutPanel1.SetColumnSpan(this.pnlRenderer, 4);
-			this.pnlRenderer.Controls.Add(this.tableLayoutPanel2);
+			this.pnlRenderer.Controls.Add(this.picNsfIcon);
+			this.pnlRenderer.Controls.Add(this.tlpRenderer);
 			this.pnlRenderer.Dock = System.Windows.Forms.DockStyle.Fill;
 			this.pnlRenderer.Location = new System.Drawing.Point(3, 3);
 			this.pnlRenderer.Name = "pnlRenderer";
-			this.pnlRenderer.Size = new System.Drawing.Size(526, 420);
+			this.pnlRenderer.Size = new System.Drawing.Size(250, 192);
 			this.pnlRenderer.TabIndex = 0;
 			// 
-			// tableLayoutPanel2
+			// picNsfIcon
 			// 
-			this.tableLayoutPanel2.ColumnCount = 1;
-			this.tableLayoutPanel2.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
-			this.tableLayoutPanel2.Controls.Add(this.ctrlRenderer, 0, 0);
-			this.tableLayoutPanel2.Cursor = System.Windows.Forms.Cursors.Hand;
-			this.tableLayoutPanel2.Dock = System.Windows.Forms.DockStyle.Fill;
-			this.tableLayoutPanel2.Location = new System.Drawing.Point(0, 0);
-			this.tableLayoutPanel2.Margin = new System.Windows.Forms.Padding(0);
-			this.tableLayoutPanel2.Name = "tableLayoutPanel2";
-			this.tableLayoutPanel2.RowCount = 1;
-			this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
-			this.tableLayoutPanel2.Size = new System.Drawing.Size(524, 418);
-			this.tableLayoutPanel2.TabIndex = 0;
-			this.tableLayoutPanel2.MouseClick += new System.Windows.Forms.MouseEventHandler(this.ctrlRenderer_MouseClick);
+			this.picNsfIcon.Anchor = System.Windows.Forms.AnchorStyles.None;
+			this.picNsfIcon.BackgroundImage = global::Mesen.GUI.Properties.Resources.NsfBackground;
+			this.picNsfIcon.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
+			this.picNsfIcon.Location = new System.Drawing.Point(49, 50);
+			this.picNsfIcon.Margin = new System.Windows.Forms.Padding(0);
+			this.picNsfIcon.MaximumSize = new System.Drawing.Size(500, 90);
+			this.picNsfIcon.Name = "picNsfIcon";
+			this.picNsfIcon.Size = new System.Drawing.Size(150, 90);
+			this.picNsfIcon.TabIndex = 6;
+			this.picNsfIcon.TabStop = false;
+			// 
+			// tlpRenderer
+			// 
+			this.tlpRenderer.ColumnCount = 1;
+			this.tlpRenderer.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
+			this.tlpRenderer.Controls.Add(this.ctrlRenderer, 0, 0);
+			this.tlpRenderer.Cursor = System.Windows.Forms.Cursors.Hand;
+			this.tlpRenderer.Dock = System.Windows.Forms.DockStyle.Fill;
+			this.tlpRenderer.Location = new System.Drawing.Point(0, 0);
+			this.tlpRenderer.Margin = new System.Windows.Forms.Padding(0);
+			this.tlpRenderer.Name = "tlpRenderer";
+			this.tlpRenderer.RowCount = 1;
+			this.tlpRenderer.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
+			this.tlpRenderer.Size = new System.Drawing.Size(248, 190);
+			this.tlpRenderer.TabIndex = 0;
+			this.tlpRenderer.MouseClick += new System.Windows.Forms.MouseEventHandler(this.ctrlRenderer_MouseClick);
 			// 
 			// ctrlRenderer
 			// 
 			this.ctrlRenderer.Anchor = System.Windows.Forms.AnchorStyles.None;
-			this.ctrlRenderer.Location = new System.Drawing.Point(134, 89);
+			this.ctrlRenderer.Location = new System.Drawing.Point(0, 0);
 			this.ctrlRenderer.Margin = new System.Windows.Forms.Padding(0);
 			this.ctrlRenderer.Name = "ctrlRenderer";
-			this.ctrlRenderer.Size = new System.Drawing.Size(256, 240);
+			this.ctrlRenderer.Size = new System.Drawing.Size(248, 190);
 			this.ctrlRenderer.TabIndex = 0;
 			this.ctrlRenderer.MouseClick += new System.Windows.Forms.MouseEventHandler(this.ctrlRenderer_MouseClick);
 			// 
@@ -156,19 +181,19 @@
 			this.tableLayoutPanel3.Controls.Add(this.lblVolume, 0, 1);
 			this.tableLayoutPanel3.Controls.Add(this.trkVolume, 0, 0);
 			this.tableLayoutPanel3.Dock = System.Windows.Forms.DockStyle.Fill;
-			this.tableLayoutPanel3.Location = new System.Drawing.Point(429, 429);
+			this.tableLayoutPanel3.Location = new System.Drawing.Point(173, 201);
 			this.tableLayoutPanel3.Name = "tableLayoutPanel3";
 			this.tableLayoutPanel3.RowCount = 2;
 			this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 31F));
 			this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-			this.tableLayoutPanel3.Size = new System.Drawing.Size(100, 45);
+			this.tableLayoutPanel3.Size = new System.Drawing.Size(80, 45);
 			this.tableLayoutPanel3.TabIndex = 4;
 			// 
 			// lblVolume
 			// 
 			this.lblVolume.Anchor = System.Windows.Forms.AnchorStyles.Top;
 			this.lblVolume.AutoSize = true;
-			this.lblVolume.Location = new System.Drawing.Point(25, 31);
+			this.lblVolume.Location = new System.Drawing.Point(15, 31);
 			this.lblVolume.MinimumSize = new System.Drawing.Size(49, 13);
 			this.lblVolume.Name = "lblVolume";
 			this.lblVolume.Size = new System.Drawing.Size(49, 13);
@@ -183,7 +208,7 @@
 			this.trkVolume.Margin = new System.Windows.Forms.Padding(0);
 			this.trkVolume.Maximum = 100;
 			this.trkVolume.Name = "trkVolume";
-			this.trkVolume.Size = new System.Drawing.Size(100, 31);
+			this.trkVolume.Size = new System.Drawing.Size(80, 31);
 			this.trkVolume.TabIndex = 7;
 			this.trkVolume.TickFrequency = 10;
 			this.trkVolume.ValueChanged += new System.EventHandler(this.trkVolume_ValueChanged);
@@ -196,10 +221,11 @@
 			// menuStrip2
 			// 
 			this.menuStrip2.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.mnuFile});
+            this.mnuFile,
+            this.mnuOptions});
 			this.menuStrip2.Location = new System.Drawing.Point(0, 0);
 			this.menuStrip2.Name = "menuStrip2";
-			this.menuStrip2.Size = new System.Drawing.Size(532, 24);
+			this.menuStrip2.Size = new System.Drawing.Size(256, 24);
 			this.menuStrip2.TabIndex = 1;
 			this.menuStrip2.Text = "menuStrip2";
 			// 
@@ -209,13 +235,14 @@
             this.mnuImportMovie,
             this.mnuExportMovie,
             this.toolStripMenuItem1,
+            this.mnuCreateSaveState,
             this.mnuResumeGameplay,
             this.toolStripMenuItem2,
             this.mnuClose});
 			this.mnuFile.Name = "mnuFile";
 			this.mnuFile.Size = new System.Drawing.Size(37, 20);
 			this.mnuFile.Text = "File";
-			this.mnuFile.DropDownOpening += new System.EventHandler(this.fileToolStripMenuItem_DropDownOpening);
+			this.mnuFile.DropDownOpening += new System.EventHandler(this.mnuFile_DropDownOpening);
 			// 
 			// mnuImportMovie
 			// 
@@ -235,6 +262,14 @@
 			// 
 			this.toolStripMenuItem1.Name = "toolStripMenuItem1";
 			this.toolStripMenuItem1.Size = new System.Drawing.Size(168, 6);
+			// 
+			// mnuCreateSaveState
+			// 
+			this.mnuCreateSaveState.Image = global::Mesen.GUI.Properties.Resources.Floppy;
+			this.mnuCreateSaveState.Name = "mnuCreateSaveState";
+			this.mnuCreateSaveState.Size = new System.Drawing.Size(171, 22);
+			this.mnuCreateSaveState.Text = "Create Save State";
+			this.mnuCreateSaveState.Click += new System.EventHandler(this.mnuCreateSaveState_Click);
 			// 
 			// mnuResumeGameplay
 			// 
@@ -257,21 +292,86 @@
 			this.mnuClose.Text = "Close";
 			this.mnuClose.Click += new System.EventHandler(this.mnuClose_Click);
 			// 
+			// mnuOptions
+			// 
+			this.mnuOptions.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.mnuVideoScale});
+			this.mnuOptions.Name = "mnuOptions";
+			this.mnuOptions.Size = new System.Drawing.Size(61, 20);
+			this.mnuOptions.Text = "Options";
+			// 
+			// mnuVideoScale
+			// 
+			this.mnuVideoScale.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.mnuScale1x,
+            this.mnuScale2x,
+            this.mnuScale3x,
+            this.mnuScale4x,
+            this.mnuScale5x,
+            this.mnuScale6x});
+			this.mnuVideoScale.Image = global::Mesen.GUI.Properties.Resources.Fullscreen;
+			this.mnuVideoScale.Name = "mnuVideoScale";
+			this.mnuVideoScale.Size = new System.Drawing.Size(152, 22);
+			this.mnuVideoScale.Text = "Video Size";
+			// 
+			// mnuScale1x
+			// 
+			this.mnuScale1x.Name = "mnuScale1x";
+			this.mnuScale1x.Size = new System.Drawing.Size(152, 22);
+			this.mnuScale1x.Text = "1x";
+			this.mnuScale1x.Click += new System.EventHandler(this.mnuScale1x_Click);
+			// 
+			// mnuScale2x
+			// 
+			this.mnuScale2x.Name = "mnuScale2x";
+			this.mnuScale2x.Size = new System.Drawing.Size(152, 22);
+			this.mnuScale2x.Text = "2x";
+			this.mnuScale2x.Click += new System.EventHandler(this.mnuScale2x_Click);
+			// 
+			// mnuScale3x
+			// 
+			this.mnuScale3x.Name = "mnuScale3x";
+			this.mnuScale3x.Size = new System.Drawing.Size(152, 22);
+			this.mnuScale3x.Text = "3x";
+			this.mnuScale3x.Click += new System.EventHandler(this.mnuScale3x_Click);
+			// 
+			// mnuScale4x
+			// 
+			this.mnuScale4x.Name = "mnuScale4x";
+			this.mnuScale4x.Size = new System.Drawing.Size(152, 22);
+			this.mnuScale4x.Text = "4x";
+			this.mnuScale4x.Click += new System.EventHandler(this.mnuScale4x_Click);
+			// 
+			// mnuScale5x
+			// 
+			this.mnuScale5x.Name = "mnuScale5x";
+			this.mnuScale5x.Size = new System.Drawing.Size(152, 22);
+			this.mnuScale5x.Text = "5x";
+			this.mnuScale5x.Click += new System.EventHandler(this.mnuScale5x_Click);
+			// 
+			// mnuScale6x
+			// 
+			this.mnuScale6x.Name = "mnuScale6x";
+			this.mnuScale6x.Size = new System.Drawing.Size(152, 22);
+			this.mnuScale6x.Text = "6x";
+			this.mnuScale6x.Click += new System.EventHandler(this.mnuScale6x_Click);
+			// 
 			// frmHistoryViewer
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
 			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-			this.ClientSize = new System.Drawing.Size(532, 501);
+			this.ClientSize = new System.Drawing.Size(256, 273);
 			this.Controls.Add(this.tableLayoutPanel1);
 			this.Controls.Add(this.menuStrip2);
-			this.MinimumSize = new System.Drawing.Size(331, 384);
+			this.MinimumSize = new System.Drawing.Size(272, 312);
 			this.Name = "frmHistoryViewer";
 			this.Text = "History Viewer";
 			this.tableLayoutPanel1.ResumeLayout(false);
 			this.tableLayoutPanel1.PerformLayout();
 			((System.ComponentModel.ISupportInitialize)(this.trkPosition)).EndInit();
 			this.pnlRenderer.ResumeLayout(false);
-			this.tableLayoutPanel2.ResumeLayout(false);
+			((System.ComponentModel.ISupportInitialize)(this.picNsfIcon)).EndInit();
+			this.tlpRenderer.ResumeLayout(false);
 			this.tableLayoutPanel3.ResumeLayout(false);
 			this.tableLayoutPanel3.PerformLayout();
 			((System.ComponentModel.ISupportInitialize)(this.trkVolume)).EndInit();
@@ -298,10 +398,20 @@
 		private System.Windows.Forms.ToolStripSeparator toolStripMenuItem2;
 		private System.Windows.Forms.ToolStripMenuItem mnuClose;
 		private System.Windows.Forms.ToolStripMenuItem mnuResumeGameplay;
-		private System.Windows.Forms.TableLayoutPanel tableLayoutPanel2;
+		private System.Windows.Forms.TableLayoutPanel tlpRenderer;
 		private System.Windows.Forms.Panel ctrlRenderer;
 		private System.Windows.Forms.TableLayoutPanel tableLayoutPanel3;
 		private System.Windows.Forms.Label lblVolume;
 		private System.Windows.Forms.TrackBar trkVolume;
+		private System.Windows.Forms.PictureBox picNsfIcon;
+		private System.Windows.Forms.ToolStripMenuItem mnuCreateSaveState;
+		private System.Windows.Forms.ToolStripMenuItem mnuOptions;
+		private System.Windows.Forms.ToolStripMenuItem mnuVideoScale;
+		private System.Windows.Forms.ToolStripMenuItem mnuScale1x;
+		private System.Windows.Forms.ToolStripMenuItem mnuScale2x;
+		private System.Windows.Forms.ToolStripMenuItem mnuScale3x;
+		private System.Windows.Forms.ToolStripMenuItem mnuScale4x;
+		private System.Windows.Forms.ToolStripMenuItem mnuScale5x;
+		private System.Windows.Forms.ToolStripMenuItem mnuScale6x;
 	}
 }

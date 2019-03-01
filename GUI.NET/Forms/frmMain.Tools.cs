@@ -398,9 +398,39 @@ namespace Mesen.GUI.Forms
 			DebugWindowManager.OpenDebugWindow(DebugWindow.TraceLogger);
 		}
 
+		private void mnuWatchWindow_Click(object sender, EventArgs e)
+		{
+			DebugWindowManager.OpenDebugWindow(DebugWindow.WatchWindow);
+		}
+
 		private void mnuTextHooker_Click(object sender, EventArgs e)
 		{
 			DebugWindowManager.OpenDebugWindow(DebugWindow.TextHooker);
+		}
+
+		private void mnuProfiler_Click(object sender, EventArgs e)
+		{
+			DebugWindowManager.OpenDebugWindow(DebugWindow.Profiler);
+		}
+
+		private void mnuOpenNametableViewer_Click(object sender, EventArgs e)
+		{
+			DebugWindowManager.OpenPpuViewer(PpuViewerMode.NametableViewer);
+		}
+
+		private void mnuOpenChrViewer_Click(object sender, EventArgs e)
+		{
+			DebugWindowManager.OpenPpuViewer(PpuViewerMode.ChrViewer);
+		}
+
+		private void mnuOpenSpriteViewer_Click(object sender, EventArgs e)
+		{
+			DebugWindowManager.OpenPpuViewer(PpuViewerMode.SpriteViewer);
+		}
+
+		private void mnuOpenPaletteViewer_Click(object sender, EventArgs e)
+		{
+			DebugWindowManager.OpenPpuViewer(PpuViewerMode.PaletteViewer);
 		}
 
 		private void mnuDebugDualSystemSecondaryCpu_Click(object sender, EventArgs e)

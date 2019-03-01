@@ -116,6 +116,7 @@
 			<Control ID="lblSoundChips">音源チップ</Control>
 			<Control ID="lblRecording">録音中</Control>
 			<Control ID="lblSlowMotion">スローモーション</Control>
+			<Control ID="lblRewinding">巻き戻し</Control>
 			<Control ID="lblFastForward">早送り</Control>
 		</Form>
 		<Form ID="frmLogWindow" Title="ログウィンドウ">
@@ -219,6 +220,12 @@
 			<Control ID="lblDisplayPosition">表示位置：</Control>
 			<Control ID="chkDisplayInputHorizontally">水平表示</Control>
 
+			<Control ID="lblSmall">小</Control>
+			<Control ID="lblLarge">大</Control>
+			<Control ID="lblDeadzone">デッドゾーンの大きさ:</Control>
+			
+			<Control ID="chkHideMousePointerForZapper">ガンが接続されている時にマウスポインターを隠す</Control>
+
 			<Control ID="lblKeyBinding">注意：　使っている設定の中には同じキーが複数のボタン―にマッピングされています。　間違いでこの設定にした場合は、設定を確認して直してください。</Control>
 		</Form>
 		<Form ID="frmVideoConfig" Title="映像設定">
@@ -281,6 +288,8 @@
 
 			<Control ID="tpgAdvanced">詳細設定</Control>
 			<Control ID="lblScreenRotation">画面の回転:</Control>
+			<Control ID="chkRemoveSpriteLimit">スプライトの制限を解除　(点滅を軽減する)</Control>
+			<Control ID="chkAdaptiveSpriteLimit">必要な時だけにスプライトの制限を戻す（制限解除による映像バグの発生率を軽減する）</Control>
 			<Control ID="chkDisableBackground">バックグラウンドを隠す</Control>
 			<Control ID="chkDisableSprites">スプライトを隠す</Control>
 			<Control ID="chkForceBackgroundFirstColumn">ゲームの設定を無視して、画面の一番左側にバックグラウンドを表す</Control>
@@ -299,10 +308,10 @@
 			<Control ID="lblRewindSpeed">巻き戻しの速度:</Control>
 
 			<Control ID="tpgAdvanced">詳細設定</Control>
+			<Control ID="lblDeveloperSettings">開発者向け設定 (自作ソフト / ROM hacking)</Control>
+			<Control ID="lblMiscSettings">その他</Control>
 			<Control ID="chkUseAlternativeMmc3Irq">MMC3AのIRQ仕様を使う</Control>
 			<Control ID="chkAllowInvalidInput">コントローラでは不可能インプットを可能にする　（同時に上と下や右と左）</Control>
-			<Control ID="chkRemoveSpriteLimit">スプライトの制限を解除　(点滅を軽減する)</Control>
-			<Control ID="chkAdaptiveSpriteLimit">必要な時だけにスプライトの制限を戻す（制限解除による映像バグの発生率を軽減する）</Control>
 			<Control ID="chkEnableOamDecay">オブジェクト・アトリビュート・メモリーの崩壊現象を再現する</Control>
 			<Control ID="chkDisablePpu2004Reads">PPUの$2004を読み込み不可能にする　（ファミコン同様）</Control>
 			<Control ID="chkDisableOamAddrBug">PPUのOAMADDRバグを無効にする</Control>
@@ -535,7 +544,7 @@
 		</Form>
 		<Form ID="frmAbout" Title="Mesenとは">
 			<Control ID="labelProductName">Mesen</Control>
-			<Control ID="labelCopyright">© 2018 M. Bibaud (aka Sour)</Control>
+			<Control ID="labelCopyright">© 2019 M. Bibaud (aka Sour)</Control>
 			<Control ID="lblWebsite">サイト:</Control>
 			<Control ID="lblLink">www.mesen.ca</Control>
 			<Control ID="labelVersion">バージョン:</Control>
@@ -598,8 +607,24 @@
 			<Control ID="mnuFile">ファイル</Control>
 			<Control ID="mnuImportMovie">動画をインポートする</Control>
 			<Control ID="mnuExportMovie">動画をエクスポートする</Control>
+			<Control ID="mnuCreateSaveState">クイックセーブを作る</Control>
 			<Control ID="mnuResumeGameplay">ここからゲームを再開する</Control>
 			<Control ID="mnuClose">終了</Control>
+
+			<Control ID="mnuOptions">設定</Control>
+			<Control ID="mnuVideoScale">映像サイズ</Control>
+			<Control ID="mnuScale1x">１倍</Control>
+			<Control ID="mnuScale2x">２倍</Control>
+			<Control ID="mnuScale3x">３倍</Control>
+			<Control ID="mnuScale4x">４倍</Control>
+			<Control ID="mnuScale5x">５倍</Control>
+			<Control ID="mnuScale6x">６倍</Control>
+		</Form>
+		<Form ID="frmSelectExportRange" Title="エクスポート範囲を指定する...">
+			<Control ID="lblStartTime">開始時点:</Control>
+			<Control ID="lblEndTime">終了時点:</Control>
+			<Control ID="btnOK">OK</Control>
+			<Control ID="btnCancel">キャンセル</Control>
 		</Form>
 		<Form ID="frmHelp" Title="コマンドラインオプション">
 			<Control ID="grpExample">使い方</Control>
@@ -608,7 +633,6 @@
 			<Control ID="tpgAudioOptions">音声</Control>
 			<Control ID="tpgEmulationOptions">エミュレーション</Control>
 			<Control ID="lblExplanation">Mesenを全画面表示の状態で"MyGame.nes"を起動する. 画面エフェクトをNTSCにして、映像サイズを2xにして、オーバースキャン設定を変更する。</Control>
-			<Control ID="txtGeneralOptions">/fullscreen - 全画面表示の状態で起動する&#13;&#10;/DoNotSaveSettings - 設定のセーブ機能を無効にする</Control>
 		</Form>
 		<Form ID="frmCopyFiles" Title="しばらくお待ちください">
 			<Control ID="lblCopying">ファイル：</Control>
@@ -745,7 +769,10 @@
 		<Message ID="SaveToFile">ファイルに保存する…</Message>
 
 		<Message ID="MovieSegment">パート {0}</Message>
+		<Message ID="MovieExportEntireSegment">全部エクスポートする</Message>
+		<Message ID="MovieExportSpecificRange">範囲を指定してエクスポートする...</Message>
 		<Message ID="MovieSaveError">動画エクスポートは失敗しました。</Message>
+		<Message ID="FileSaveError">ファイルの保存に失敗しました。</Message>
 
 		<Message ID="ClearHistory">履歴を消去</Message>
 		<Message ID="LastFolderUsed">最後に使用したフォルダ</Message>
@@ -753,6 +780,11 @@
 		<Message ID="MouseModeEnabled">マウスモード有効。 無効にするにはESCやポースボタンを使ってください。</Message>
 		<Message ID="BandaiMicrophone">Bandaiマイクロフォン</Message>
 		<Message ID="DatachBarcodeReader">Datachバーコードリーダー</Message>
+
+		<Message ID="HelpFullscreen">/fullscreen - 全画面表示の状態で起動する</Message>
+		<Message ID="HelpDoNotSaveSettings">/DoNotSaveSettings - 設定のセーブ機能を無効にする</Message>
+		<Message ID="HelpRecordMovie">/RecordMovie="filename.mmo" - ゲームをロードしてから指定されたファイルに動画を録画する。</Message>
+		<Message ID="HelpLoadLastSession">/LoadLastSession - 前回ゲーム閉じた時の状況でゲームを始める</Message>
 
 		<Message ID="Resume">再開</Message>
 		<Message ID="Pause">ポーズ</Message>

@@ -32,7 +32,8 @@ namespace Mesen.GUI.Debugger
 
 		public bool Enabled = true;
 		public bool MarkEvent = false;
-		public UInt32 Address;
+		public bool ProcessDummyReadWrites = false;
+		public UInt32 Address = UInt32.MaxValue;
 		public UInt32 StartAddress;
 		public UInt32 EndAddress;
 		public BreakpointAddressType AddressType = BreakpointAddressType.SingleAddress;
@@ -99,19 +100,19 @@ namespace Mesen.GUI.Debugger
 
 		public bool IsCpuBreakpoint { get { return this._isCpuBreakpoint; } }
 
-		private BreakpointType Type
+		private BreakpointTypeFlags Type
 		{
 			get
 			{
-				BreakpointType type = BreakpointType.Global;
+				BreakpointTypeFlags type = BreakpointTypeFlags.Global;
 				if(BreakOnRead) {
-					type |= IsCpuBreakpoint ? BreakpointType.Read : BreakpointType.ReadVram;
+					type |= IsCpuBreakpoint ? BreakpointTypeFlags.Read : BreakpointTypeFlags.ReadVram;
 				}
 				if(BreakOnWrite) {
-					type |= IsCpuBreakpoint ? BreakpointType.Write : BreakpointType.WriteVram;
+					type |= IsCpuBreakpoint ? BreakpointTypeFlags.Write : BreakpointTypeFlags.WriteVram;
 				}
 				if(BreakOnExec && IsCpuBreakpoint) {
-					type |= BreakpointType.Execute;
+					type |= BreakpointTypeFlags.Execute;
 				}
 				return type;
 			}
@@ -122,7 +123,7 @@ namespace Mesen.GUI.Debugger
 			string type;
 
 			switch(MemoryType) {
-				default:
+				default: throw new Exception("invalid type");
 				case DebugMemoryType.CpuMemory: type = "CPU"; break;
 				case DebugMemoryType.PpuMemory: type = "PPU"; break;
 				case DebugMemoryType.PrgRom: type = "PRG"; break;
@@ -130,6 +131,7 @@ namespace Mesen.GUI.Debugger
 				case DebugMemoryType.SaveRam: type = "SRAM"; break;
 				case DebugMemoryType.ChrRam: type = "CHR"; break;
 				case DebugMemoryType.ChrRom: type = "CHR"; break;
+				case DebugMemoryType.NametableRam: type = "NT"; break;
 				case DebugMemoryType.PaletteMemory: type = "PAL"; break;
 			}
 
@@ -167,11 +169,45 @@ namespace Mesen.GUI.Debugger
 				if(IsCpuBreakpoint) {
 					return InteropEmu.DebugGetRelativeAddress(address, this.MemoryType.ToAddressType());
 				} else {
-					return InteropEmu.DebugGetRelativeChrAddress(address);
+					return InteropEmu.DebugGetRelativePpuAddress(address, this.MemoryType.ToPpuAddressType());
 				}
-			} else {
-				return -1;
 			}
+			return -1;
+		}
+
+		private int GetRelativeAddressEnd()
+		{
+			if(this.AddressType == BreakpointAddressType.AddressRange && this.IsAbsoluteAddress) {
+				if(IsCpuBreakpoint) {
+					return InteropEmu.DebugGetRelativeAddress(this.EndAddress, this.MemoryType.ToAddressType());
+				} else {
+					return InteropEmu.DebugGetRelativePpuAddress(this.EndAddress, this.MemoryType.ToPpuAddressType());
+				}
+			}
+			return -1;
+		}
+
+		public bool Matches(int address, DebugMemoryType type)
+		{
+			if(IsTypeCpuBreakpoint(type) != this.IsCpuBreakpoint) {
+				return false;
+			}
+
+			bool isRelativeMemory = type == DebugMemoryType.CpuMemory || type == DebugMemoryType.PpuMemory;
+
+			if(this.AddressType == BreakpointAddressType.SingleAddress) {
+				if(isRelativeMemory && this.IsAbsoluteAddress) {
+					return address == this.GetRelativeAddress();
+				}
+				return address == this.Address && type == this.MemoryType;
+			} else if(this.AddressType == BreakpointAddressType.AddressRange) {
+				if(isRelativeMemory && this.IsAbsoluteAddress) {
+					return address >= GetRelativeAddress() && address <= this.GetRelativeAddressEnd();
+				}
+				return address >= this.StartAddress && address <= this.EndAddress && type == this.MemoryType;
+			}
+
+			return false;
 		}
 
 		public bool Matches(int relativeAddress, AddressTypeInfo info)
@@ -193,6 +229,7 @@ namespace Mesen.GUI.Debugger
 				MemoryType = MemoryType,
 				Type = Type,
 				MarkEvent = MarkEvent,
+				ProcessDummyReadWrites = ProcessDummyReadWrites,
 				Enabled = Enabled
 			};
 			switch(AddressType) {

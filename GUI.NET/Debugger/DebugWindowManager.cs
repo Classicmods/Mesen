@@ -12,14 +12,24 @@ namespace Mesen.GUI.Debugger
 	{
 		private static HashSet<Form> _openedWindows = new HashSet<Form>();
 
+		public static List<Form> GetWindows()
+		{
+			return new List<Form>(_openedWindows);
+		}
+
 		public static bool ScriptWindowOpened { get { return _openedWindows.Any(wnd => wnd is frmScript); } }
 
-		public static void OpenDebugWindow(DebugWindow window)
+		public static Form OpenDebugWindow(DebugWindow window)
 		{
 			Form existingWindow = GetExistingSingleInstanceWindow(window);
 			if(existingWindow != null) {
 				existingWindow.BringToFront();
+				if(existingWindow.WindowState == FormWindowState.Minimized) {
+					//Unminimize window if it was minimized
+					existingWindow.WindowState = FormWindowState.Normal;
+				}
 				existingWindow.Focus();
+				return existingWindow;
 			} else {
 				BaseForm frm = null;
 				switch(window) {
@@ -32,36 +42,70 @@ namespace Mesen.GUI.Debugger
 					case DebugWindow.ApuViewer: frm = new frmApuViewer(); frm.Icon = Properties.Resources.Audio; break;
 					case DebugWindow.EventViewer: frm = new frmEventViewer(); frm.Icon = Properties.Resources.NesEventViewer; break;
 					case DebugWindow.TextHooker: frm = new frmTextHooker(); frm.Icon = Properties.Resources.Font; break;
+					case DebugWindow.Profiler: frm = new frmProfiler(); frm.Icon = Properties.Resources.Speed; break;
+					case DebugWindow.WatchWindow: frm = new frmWatchWindow(); frm.Icon = Properties.Resources.Find; break;
 				}
 				_openedWindows.Add(frm);
 				frm.FormClosed += Debugger_FormClosed;
 				frm.Show();
+				return frm;
 			}
 		}
 
 		public static void OpenAssembler(string code = "", UInt16 startAddress = 0, UInt16 blockLength = 0)
 		{
 			frmAssembler frm = new frmAssembler(code, startAddress, blockLength);
+			frm.Icon = Properties.Resources.Chip;
 			_openedWindows.Add(frm);
 			frm.FormClosed += Debugger_FormClosed;
 			frm.Show();
 		}
 
-		public static void OpenMemoryViewer(int address, DebugMemoryType memoryType)
+		private static frmMemoryViewer OpenMemoryViewer()
 		{
 			frmMemoryViewer frm = GetMemoryViewer();
 			if(frm == null) {
 				frm = new frmMemoryViewer();
+				frm.Icon = Properties.Resources.CheatCode;
 				frm.FormClosed += Debugger_FormClosed;
 				_openedWindows.Add(frm);
+			} else {
+				if(frm.WindowState == FormWindowState.Minimized) {
+					//Unminimize window if it was minimized
+					frm.WindowState = FormWindowState.Normal;
+				}
+				frm.BringToFront();
 			}
 			frm.Show();
+			return frm;
+		}
+
+		public static void OpenMemoryViewer(int address, DebugMemoryType memoryType)
+		{
+			frmMemoryViewer frm = OpenMemoryViewer();
 			frm.ShowAddress(address, memoryType);
+		}
+
+		public static void OpenMemoryViewer(GoToDestination dest)
+		{
+			frmMemoryViewer frm = OpenMemoryViewer();
+			frm.GoToDestination(dest);
+		}
+
+		public static frmPpuViewer OpenPpuViewer(PpuViewerMode mode)
+		{
+			frmPpuViewer frm = new frmPpuViewer(mode);
+			frm.Icon = Properties.Resources.Video;
+			_openedWindows.Add(frm);
+			frm.FormClosed += Debugger_FormClosed;
+			frm.Show();
+			return frm;
 		}
 
 		public static frmScript OpenScriptWindow(bool forceBlank)
 		{
 			frmScript frm = new frmScript(forceBlank);
+			frm.Icon = Properties.Resources.Script;
 			_openedWindows.Add(frm);
 			frm.FormClosed += Debugger_FormClosed;
 			frm.Show();
@@ -103,6 +147,8 @@ namespace Mesen.GUI.Debugger
 				case DebugWindow.Debugger: return _openedWindows.ToList().Find((form) => form.GetType() == typeof(frmDebugger));
 				case DebugWindow.ApuViewer: return _openedWindows.ToList().Find((form) => form.GetType() == typeof(frmApuViewer));
 				case DebugWindow.TextHooker: return _openedWindows.ToList().Find((form) => form.GetType() == typeof(frmTextHooker));
+				case DebugWindow.Profiler: return _openedWindows.ToList().Find((form) => form.GetType() == typeof(frmProfiler));
+				case DebugWindow.WatchWindow: return _openedWindows.ToList().Find((form) => form.GetType() == typeof(frmWatchWindow));
 			}
 
 			return null;
@@ -112,12 +158,9 @@ namespace Mesen.GUI.Debugger
 		{
 			if(_openedWindows.Count == 0) {
 				//All windows have been closed, disable debugger
+				DebugWorkspaceManager.SaveWorkspace();
 				DebugWorkspaceManager.Clear();
-
-				Task.Run(() => {
-					//Run this in another thread to avoid deadlocks when this is called within a notification handler
-					InteropEmu.DebugRelease();
-				});
+				InteropEmu.DebugRelease();
 			}
 		}
 
@@ -139,5 +182,7 @@ namespace Mesen.GUI.Debugger
 		ApuViewer,
 		EventViewer,
 		TextHooker,
+		Profiler,
+		WatchWindow,
 	}
 }

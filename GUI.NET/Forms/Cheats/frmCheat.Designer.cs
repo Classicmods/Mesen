@@ -43,7 +43,6 @@
 			this.lblAddress = new System.Windows.Forms.Label();
 			this.txtAddress = new System.Windows.Forms.TextBox();
 			this.lblNewValue = new System.Windows.Forms.Label();
-			this.flowLayoutPanel2 = new System.Windows.Forms.FlowLayoutPanel();
 			this.radRelativeAddress = new System.Windows.Forms.RadioButton();
 			this.radAbsoluteAddress = new System.Windows.Forms.RadioButton();
 			this.txtValue = new System.Windows.Forms.TextBox();
@@ -51,16 +50,17 @@
 			this.chkCompareValue = new System.Windows.Forms.CheckBox();
 			this.chkEnabled = new System.Windows.Forms.CheckBox();
 			this.txtGameName = new System.Windows.Forms.TextBox();
+			this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
 			this.tableLayoutPanel2.SuspendLayout();
 			this.grpCode.SuspendLayout();
 			this.tlpAdd.SuspendLayout();
 			this.tlpCustom.SuspendLayout();
-			this.flowLayoutPanel2.SuspendLayout();
+			this.tableLayoutPanel1.SuspendLayout();
 			this.SuspendLayout();
 			// 
 			// baseConfigPanel
 			// 
-			this.baseConfigPanel.Location = new System.Drawing.Point(0, 273);
+			this.baseConfigPanel.Location = new System.Drawing.Point(0, 272);
 			this.baseConfigPanel.Size = new System.Drawing.Size(385, 29);
 			// 
 			// tableLayoutPanel2
@@ -84,7 +84,7 @@
 			this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle());
 			this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle());
 			this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-			this.tableLayoutPanel2.Size = new System.Drawing.Size(385, 273);
+			this.tableLayoutPanel2.Size = new System.Drawing.Size(385, 272);
 			this.tableLayoutPanel2.TabIndex = 3;
 			// 
 			// label2
@@ -135,7 +135,7 @@
 			this.grpCode.Dock = System.Windows.Forms.DockStyle.Fill;
 			this.grpCode.Location = new System.Drawing.Point(3, 81);
 			this.grpCode.Name = "grpCode";
-			this.grpCode.Size = new System.Drawing.Size(379, 189);
+			this.grpCode.Size = new System.Drawing.Size(379, 188);
 			this.grpCode.TabIndex = 3;
 			this.grpCode.TabStop = false;
 			this.grpCode.Text = "Code";
@@ -158,7 +158,7 @@
 			this.tlpAdd.RowStyles.Add(new System.Windows.Forms.RowStyle());
 			this.tlpAdd.RowStyles.Add(new System.Windows.Forms.RowStyle());
 			this.tlpAdd.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-			this.tlpAdd.Size = new System.Drawing.Size(373, 170);
+			this.tlpAdd.Size = new System.Drawing.Size(373, 169);
 			this.tlpAdd.TabIndex = 0;
 			// 
 			// radCustom
@@ -219,20 +219,22 @@
 			this.tlpCustom.Controls.Add(this.lblAddress, 0, 0);
 			this.tlpCustom.Controls.Add(this.txtAddress, 1, 0);
 			this.tlpCustom.Controls.Add(this.lblNewValue, 0, 2);
-			this.tlpCustom.Controls.Add(this.flowLayoutPanel2, 1, 1);
 			this.tlpCustom.Controls.Add(this.txtValue, 1, 2);
 			this.tlpCustom.Controls.Add(this.txtCompare, 1, 3);
 			this.tlpCustom.Controls.Add(this.chkCompareValue, 0, 3);
+			this.tlpCustom.Controls.Add(this.tableLayoutPanel1, 0, 1);
 			this.tlpCustom.Dock = System.Windows.Forms.DockStyle.Fill;
 			this.tlpCustom.Location = new System.Drawing.Point(120, 55);
 			this.tlpCustom.Name = "tlpCustom";
-			this.tlpCustom.RowCount = 5;
+			this.tlpCustom.RowCount = 6;
+			this.tlpCustom.RowStyles.Add(new System.Windows.Forms.RowStyle());
 			this.tlpCustom.RowStyles.Add(new System.Windows.Forms.RowStyle());
 			this.tlpCustom.RowStyles.Add(new System.Windows.Forms.RowStyle());
 			this.tlpCustom.RowStyles.Add(new System.Windows.Forms.RowStyle());
 			this.tlpCustom.RowStyles.Add(new System.Windows.Forms.RowStyle());
 			this.tlpCustom.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-			this.tlpCustom.Size = new System.Drawing.Size(250, 112);
+			this.tlpCustom.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
+			this.tlpCustom.Size = new System.Drawing.Size(250, 111);
 			this.tlpCustom.TabIndex = 4;
 			// 
 			// lblAddress
@@ -258,22 +260,11 @@
 			// 
 			this.lblNewValue.Anchor = System.Windows.Forms.AnchorStyles.Left;
 			this.lblNewValue.AutoSize = true;
-			this.lblNewValue.Location = new System.Drawing.Point(3, 59);
+			this.lblNewValue.Location = new System.Drawing.Point(3, 56);
 			this.lblNewValue.Name = "lblNewValue";
 			this.lblNewValue.Size = new System.Drawing.Size(62, 13);
 			this.lblNewValue.TabIndex = 3;
 			this.lblNewValue.Text = "New Value:";
-			// 
-			// flowLayoutPanel2
-			// 
-			this.tlpCustom.SetColumnSpan(this.flowLayoutPanel2, 2);
-			this.flowLayoutPanel2.Controls.Add(this.radRelativeAddress);
-			this.flowLayoutPanel2.Controls.Add(this.radAbsoluteAddress);
-			this.flowLayoutPanel2.Location = new System.Drawing.Point(0, 26);
-			this.flowLayoutPanel2.Margin = new System.Windows.Forms.Padding(0);
-			this.flowLayoutPanel2.Name = "flowLayoutPanel2";
-			this.flowLayoutPanel2.Size = new System.Drawing.Size(250, 27);
-			this.flowLayoutPanel2.TabIndex = 4;
 			// 
 			// radRelativeAddress
 			// 
@@ -301,7 +292,7 @@
 			// 
 			// txtValue
 			// 
-			this.txtValue.Location = new System.Drawing.Point(107, 56);
+			this.txtValue.Location = new System.Drawing.Point(107, 53);
 			this.txtValue.MaxLength = 2;
 			this.txtValue.Name = "txtValue";
 			this.txtValue.Size = new System.Drawing.Size(30, 20);
@@ -311,7 +302,7 @@
 			// txtCompare
 			// 
 			this.txtCompare.Enabled = false;
-			this.txtCompare.Location = new System.Drawing.Point(107, 82);
+			this.txtCompare.Location = new System.Drawing.Point(107, 79);
 			this.txtCompare.MaxLength = 2;
 			this.txtCompare.Name = "txtCompare";
 			this.txtCompare.Size = new System.Drawing.Size(30, 20);
@@ -319,9 +310,9 @@
 			// 
 			// chkCompareValue
 			// 
+			this.chkCompareValue.Anchor = System.Windows.Forms.AnchorStyles.Left;
 			this.chkCompareValue.AutoSize = true;
-			this.chkCompareValue.Location = new System.Drawing.Point(3, 85);
-			this.chkCompareValue.Margin = new System.Windows.Forms.Padding(3, 6, 3, 3);
+			this.chkCompareValue.Location = new System.Drawing.Point(3, 80);
 			this.chkCompareValue.Name = "chkCompareValue";
 			this.chkCompareValue.Size = new System.Drawing.Size(98, 17);
 			this.chkCompareValue.TabIndex = 7;
@@ -342,18 +333,34 @@
 			// 
 			// txtGameName
 			// 
-			this.txtGameName.Dock = System.Windows.Forms.DockStyle.Fill;
-			this.txtGameName.Location = new System.Drawing.Point(78, 3);
+			this.txtGameName.Anchor = System.Windows.Forms.AnchorStyles.Left;
+			this.txtGameName.Location = new System.Drawing.Point(78, 4);
 			this.txtGameName.Name = "txtGameName";
 			this.txtGameName.ReadOnly = true;
 			this.txtGameName.Size = new System.Drawing.Size(237, 20);
 			this.txtGameName.TabIndex = 0;
 			// 
+			// tableLayoutPanel1
+			// 
+			this.tableLayoutPanel1.ColumnCount = 2;
+			this.tlpCustom.SetColumnSpan(this.tableLayoutPanel1, 2);
+			this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle());
+			this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
+			this.tableLayoutPanel1.Controls.Add(this.radAbsoluteAddress, 1, 0);
+			this.tableLayoutPanel1.Controls.Add(this.radRelativeAddress, 0, 0);
+			this.tableLayoutPanel1.Location = new System.Drawing.Point(0, 26);
+			this.tableLayoutPanel1.Margin = new System.Windows.Forms.Padding(0, 0, 0, 0);
+			this.tableLayoutPanel1.Name = "tableLayoutPanel1";
+			this.tableLayoutPanel1.RowCount = 1;
+			this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
+			this.tableLayoutPanel1.Size = new System.Drawing.Size(200, 24);
+			this.tableLayoutPanel1.TabIndex = 8;
+			// 
 			// frmCheat
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
 			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-			this.ClientSize = new System.Drawing.Size(385, 302);
+			this.ClientSize = new System.Drawing.Size(385, 301);
 			this.Controls.Add(this.tableLayoutPanel2);
 			this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
 			this.MaximizeBox = false;
@@ -372,8 +379,8 @@
 			this.tlpAdd.PerformLayout();
 			this.tlpCustom.ResumeLayout(false);
 			this.tlpCustom.PerformLayout();
-			this.flowLayoutPanel2.ResumeLayout(false);
-			this.flowLayoutPanel2.PerformLayout();
+			this.tableLayoutPanel1.ResumeLayout(false);
+			this.tableLayoutPanel1.PerformLayout();
 			this.ResumeLayout(false);
 
 		}
@@ -395,7 +402,6 @@
 		private System.Windows.Forms.Label lblAddress;
 		private System.Windows.Forms.TextBox txtAddress;
 		private System.Windows.Forms.Label lblNewValue;
-		private System.Windows.Forms.FlowLayoutPanel flowLayoutPanel2;
 		private System.Windows.Forms.RadioButton radRelativeAddress;
 		private System.Windows.Forms.RadioButton radAbsoluteAddress;
 		private System.Windows.Forms.TextBox txtValue;
@@ -404,7 +410,6 @@
 		private System.Windows.Forms.Button btnBrowse;
 		private System.Windows.Forms.CheckBox chkEnabled;
 		private System.Windows.Forms.CheckBox chkCompareValue;
-
-
+		private System.Windows.Forms.TableLayoutPanel tableLayoutPanel1;
 	}
 }

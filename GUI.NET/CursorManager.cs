@@ -29,14 +29,27 @@ namespace Mesen.GUI
 			_tmrCheckMouseMove.Start();
 		}
 
+		public static void StopTimers()
+		{
+			_tmrCheckMouseMove.Stop();
+			_tmrHideMouse.Stop();
+		}
+
 		private static void tmrCheckMouseMove_Tick(object sender, EventArgs e)
 		{
 			//Rarely the cursor becomes hidden despite leaving the window or moving
 			//Have not been able to find a reliable way to reproduce it yet
 			//This is a patch to prevent that bug from having any negative impact
 			if(!_mouseCaptured && _lastPosition != Cursor.Position) {
-				ShowMouse();
 				_lastPosition = Cursor.Position;
+
+				bool running = InteropEmu.IsRunning() && !InteropEmu.IsPaused();
+				if(running && ConfigManager.Config.InputInfo.HideMousePointerForZapper && CursorManager.IsLightGun) {
+					//Keep mouse hidden when using zapper if option to hide mouse is enabled
+					return;
+				}
+
+				ShowMouse();
 			}
 		}
 
@@ -67,19 +80,14 @@ namespace Mesen.GUI
 			}
 		}
 
+		private static bool IsLightGun
+		{
+			get { return InteropEmu.HasZapper() || InteropEmu.GetExpansionDevice() == InteropEmu.ExpansionPortDevice.BandaiHyperShot; }
+		}
+
 		public static bool NeedMouseIcon
 		{
-			get {
-				switch(InteropEmu.GetExpansionDevice()) {
-					case InteropEmu.ExpansionPortDevice.OekaKidsTablet:
-					case InteropEmu.ExpansionPortDevice.BandaiHyperShot:
-						return true;
-				}
-				if(InteropEmu.HasZapper()) {
-					return true;
-				}
-				return false;
-			}
+			get { return CursorManager.IsLightGun || InteropEmu.GetExpansionDevice() == InteropEmu.ExpansionPortDevice.OekaKidsTablet; }
 		}
 
 		public static void OnMouseMove(Control ctrl)
@@ -99,6 +107,10 @@ namespace Mesen.GUI
 
 				if(!InteropEmu.IsRunning() || InteropEmu.IsPaused()) {
 					ShowMouse();
+				} else if(ConfigManager.Config.InputInfo.HideMousePointerForZapper && CursorManager.IsLightGun) {
+					//Keep mouse hidden when using zapper if option to hide mouse is enabled
+					HideMouse();
+					return;
 				}
 
 				_tmrHideMouse.Stop();

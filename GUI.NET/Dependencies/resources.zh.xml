@@ -49,7 +49,29 @@
 			<Control ID="mnuFullscreen">全屏</Control>
 			<Control ID="mnuVideoFilter">滤镜</Control>
 			<Control ID="mnuNoneFilter">无</Control>
-			<Control ID="mnuNtscFilter">NTSC 2x (blargg)</Control>
+			<Control ID="mnuNtscFilter">NTSC 2 倍 (blargg)</Control>
+			<Control ID="mnuNtscBisqwitQuarterFilter">NTSC 2 倍 (Bisqwit)</Control>
+			<Control ID="mnuNtscBisqwitHalfFilter">NTSC 4 倍 (Bisqwit)</Control>
+			<Control ID="mnuNtscBisqwitFullFilter">NTSC 8 倍 (Bisqwit)</Control>
+			<Control ID="mnuXBRZ2xFilter">xBRZ 2 倍</Control>
+			<Control ID="mnuXBRZ3xFilter">xBRZ 3 倍</Control>
+			<Control ID="mnuXBRZ4xFilter">xBRZ 4 倍</Control>
+			<Control ID="mnuXBRZ5xFilter">xBRZ 5 倍</Control>
+			<Control ID="mnuXBRZ6xFilter">xBRZ 6 倍</Control>
+			<Control ID="mnuHQ2xFilter">高质量 2 倍</Control>
+			<Control ID="mnuHQ3xFilter">高质量 3 倍</Control>
+			<Control ID="mnuHQ4xFilter">高质量 4 倍</Control>
+			<Control ID="mnuScale2xFilter">缩放 2 倍</Control>
+			<Control ID="mnuScale3xFilter">缩放 3 倍</Control>
+			<Control ID="mnuScale4xFilter">缩放 4 倍</Control>
+			<Control ID="mnu2xSaiFilter">2 倍 Sai</Control>
+			<Control ID="mnuSuper2xSaiFilter">超级 2 倍 Sai</Control>
+			<Control ID="mnuPrescale2xFilter">预缩放 2 倍</Control>
+			<Control ID="mnuPrescale3xFilter">预缩放 3 倍</Control>
+			<Control ID="mnuPrescale4xFilter">预缩放 4 倍</Control>
+			<Control ID="mnuPrescale6xFilter">预缩放 6 倍</Control>
+			<Control ID="mnuPrescale8xFilter">预缩放 8 倍</Control>
+			<Control ID="mnuPrescale10xFilter">预缩放 10 倍</Control>
 			<Control ID="mnuBilinearInterpolation">使用双线性插值</Control>
 			<Control ID="mnuAudioConfig">声音</Control>
 			<Control ID="mnuInput">输入</Control>
@@ -118,6 +140,7 @@
 			<Control ID="lblSoundChips">声音芯片:</Control>
 			<Control ID="lblRecording">正在录音</Control>
 			<Control ID="lblSlowMotion">慢放</Control>
+			<Control ID="lblRewinding">倒带</Control>
 			<Control ID="lblFastForward">快进</Control>
 		</Form>
 		<Form ID="frmLogWindow" Title="日志窗口">
@@ -221,6 +244,12 @@
 			<Control ID="lblDisplayPosition">显示位置:</Control>
 			<Control ID="chkDisplayInputHorizontally">横向</Control>
 
+			<Control ID="lblSmall">小</Control>
+			<Control ID="lblLarge">大</Control>
+			<Control ID="lblDeadzone">死区大小:</Control>
+			
+			<Control ID="chkHideMousePointerForZapper">使用手枪时隐藏鼠标指针</Control>
+
 			<Control ID="lblKeyBinding">警告：您当前的配置包含冲突的键绑定 - 键盘或游戏手柄上的某些物理按钮映射到NES控制器上的多个按钮.如果这不是故意的，请查看并更正您的按键绑定.</Control>
 		</Form>
 		<Form ID="frmVideoConfig" Title="视频设置">
@@ -287,6 +316,8 @@
 
 			<Control ID="tpgAdvanced">高级</Control>
 			<Control ID="lblScreenRotation">屏幕旋转:</Control>
+			<Control ID="chkRemoveSpriteLimit">不限制精灵 (缓解闪烁症状)</Control>
+			<Control ID="chkAdaptiveSpriteLimit">在必要时自动重新限制精灵 (缓解取消限制精灵导致的画面问题)</Control>
 			<Control ID="chkDisableBackground">禁用背景</Control>
 			<Control ID="chkDisableSprites">禁用精灵</Control>
 			<Control ID="chkForceBackgroundFirstColumn">在第一列强制显示背景</Control>
@@ -304,10 +335,10 @@
 			<Control ID="lblRewindSpeed">快退速度:</Control>
 
 			<Control ID="tpgAdvanced">高级</Control>
+			<Control ID="lblDeveloperSettings">开发者推荐设置 (自作/修改 ROM)</Control>
+			<Control ID="lblMiscSettings">其他</Control>
 			<Control ID="chkUseAlternativeMmc3Irq">使用 MMC3 IRQ 替代行为</Control>
 			<Control ID="chkAllowInvalidInput">允许无效按键 (例如同时按下↑↓/←→)</Control>
-			<Control ID="chkRemoveSpriteLimit">不限制精灵 (缓解闪烁症状)</Control>
-			<Control ID="chkAdaptiveSpriteLimit">在必要时自动重新限制精灵 (缓解取消限制精灵导致的画面问题)</Control>
 			<Control ID="chkEnableOamDecay">模拟 OAM 和 RAM 损坏</Control>
 			<Control ID="chkDisablePpu2004Reads">禁止读取 PPU $2004 地址 (FC 真机)</Control>
 			<Control ID="chkDisableOamAddrBug">不模拟 PPU OAM 地址 BUG</Control>
@@ -536,7 +567,7 @@
 		</Form>
 		<Form ID="frmAbout" Title="关于 Mesen">
 			<Control ID="labelProductName">Mesen</Control>
-			<Control ID="labelCopyright">© 2018 M. Bibaud (又名 Sour)</Control>
+			<Control ID="labelCopyright">© 2019 M. Bibaud (又名 Sour)</Control>
 			<Control ID="lblWebsite">网站:</Control>
 			<Control ID="lblLink">www.mesen.ca</Control>
 			<Control ID="labelVersion">版本:</Control>
@@ -600,8 +631,24 @@
 			<Control ID="mnuFile">文件</Control>
 			<Control ID="mnuImportMovie">导入影片</Control>
 			<Control ID="mnuExportMovie">导出影片</Control>
+			<Control ID="mnuCreateSaveState">创建进度</Control>
 			<Control ID="mnuResumeGameplay">继续播放</Control>
 			<Control ID="mnuClose">关闭</Control>
+
+			<Control ID="mnuOptions">设置</Control>
+			<Control ID="mnuVideoScale">尺寸</Control>
+			<Control ID="mnuScale1x">1 倍</Control>
+			<Control ID="mnuScale2x">2 倍</Control>
+			<Control ID="mnuScale3x">3 倍</Control>
+			<Control ID="mnuScale4x">4 倍</Control>
+			<Control ID="mnuScale5x">5 倍</Control>
+			<Control ID="mnuScale6x">6 倍</Control>
+		</Form>
+		<Form ID="frmSelectExportRange" Title="导出范围...">
+			<Control ID="lblStartTime">开始时间:</Control>
+			<Control ID="lblEndTime">结束时间:</Control>
+			<Control ID="btnOK">确定</Control>
+			<Control ID="btnCancel">取消</Control>
 		</Form>
 		<Form ID="frmHelp" Title="命令行选项">
 			<Control ID="grpExample">用法示例</Control>
@@ -610,7 +657,6 @@
 			<Control ID="tpgAudioOptions">音频选项</Control>
 			<Control ID="tpgEmulationOptions">模拟选项</Control>
 			<Control ID="lblExplanation">使用上面的命令行，Mesen 会以全屏模式启动、加载 "MyGame.nes"、使用 NTSC 滤镜、画面扩大到 2 倍，并且改变过扫描设置. "DoNotSaveSettings" 用于阻止命令行选项替代 Mesen 原本的设置.</Control>
-			<Control ID="txtGeneralOptions">/fullscreen - 全屏模式启动 Mesen&#13;/DoNotSaveSettings - 阻止命令行的选项替代 Mesen 原本的设置 (防止命令行选项成为默认设置).</Control>
 		</Form>
 		<Form ID="frmCopyFiles" Title="正在复制，请稍候...">
 			<Control ID="lblCopying">复制中:</Control>
@@ -745,13 +791,25 @@
 
 		<Message ID="LoadFromFile">从文件载入...</Message>
 		<Message ID="SaveToFile">保存到文件...</Message>
+		
 		<Message ID="MovieSegment">第 #{0} 段</Message>
-		<Message ID="MovieSaveError">尝试保存电影文件时发生错误.</Message>
+		<Message ID="MovieExportEntireSegment">导出整段</Message>
+		<Message ID="MovieExportSpecificRange">导出范围...</Message>
+		<Message ID="MovieSaveError">导出电影失败.</Message>
+		<Message ID="FileSaveError">保存文件失败.</Message>
+		
 		<Message ID="ClearHistory">清除历史</Message>
 		<Message ID="LastFolderUsed">上次使用的文件夹</Message>
+		
 		<Message ID="MouseModeEnabled">启用鼠标模式 - 按 ESC 或 pause 来释放光标.</Message>
 		<Message ID="BandaiMicrophone">Bandai 麦克风</Message>
 		<Message ID="DatachBarcodeReader">附加条码机</Message>
+
+		<Message ID="HelpFullscreen">/fullscreen - 全屏模式启动 Mesen</Message>
+		<Message ID="HelpDoNotSaveSettings">/DoNotSaveSettings - 阻止命令行的选项替代 Mesen 原本的设置 (防止命令行选项成为默认设置).</Message>
+		<Message ID="HelpRecordMovie">/RecordMovie="filename.mmo" - 载入指定游戏后开始录制电影。</Message>
+		<Message ID="HelpLoadLastSession">/LoadLastSession - 从上次中断的位置继续。</Message>
+
 		<Message ID="Resume">恢复</Message>
 		<Message ID="Pause">暂停</Message>
 		<Message ID="StartServer">启动服务器</Message>
@@ -821,9 +879,9 @@
 		<Message ID="ConfirmPowerCycle">您真的要执行电源操作吗？</Message>
 		<Message ID="ConfirmExit">您真的要退出吗？</Message>
 
-		<Message ID="EmulatorShortcutMappings_FastForward">快进</Message>
+		<Message ID="EmulatorShortcutMappings_FastForward">快进 (按住)</Message>
 		<Message ID="EmulatorShortcutMappings_ToggleFastForward">切换快进</Message>
-		<Message ID="EmulatorShortcutMappings_Rewind">倒带</Message>
+		<Message ID="EmulatorShortcutMappings_Rewind">倒带 (按住)</Message>
 		<Message ID="EmulatorShortcutMappings_ToggleRewind">切换倒带</Message>
 		<Message ID="EmulatorShortcutMappings_RewindTenSecs">快退 10 秒</Message>
 		<Message ID="EmulatorShortcutMappings_RewindOneMin">快退 1 分钟</Message>
@@ -963,30 +1021,30 @@
 		</Enum>
 		<Enum ID="VideoFilterType">
 			<Value ID="None">无</Value>
-			<Value ID="NTSC">NTSC 2x (blargg)</Value>
-			<Value ID="BisqwitNtscQuarterRes">NTSC 2x (Bisqwit)</Value>
-			<Value ID="BisqwitNtscHalfRes">NTSC 4x (Bisqwit)</Value>
-			<Value ID="BisqwitNtsc">NTSC 8x (Bisqwit)</Value>
-			<Value ID="xBRZ2x">xBRZ 2x</Value>
-			<Value ID="xBRZ3x">xBRZ 3x</Value>
-			<Value ID="xBRZ4x">xBRZ 4x</Value>
-			<Value ID="xBRZ5x">xBRZ 5x</Value>
-			<Value ID="xBRZ6x">xBRZ 6x</Value>
-			<Value ID="HQ2x">HQ 2x</Value>
-			<Value ID="HQ3x">HQ 3x</Value>
-			<Value ID="HQ4x">HQ 4x</Value>
-			<Value ID="Scale2x">Scale 2x</Value>
-			<Value ID="Scale3x">Scale 3x</Value>
-			<Value ID="Scale4x">Scale 4x</Value>
-			<Value ID="_2xSai">2xSai</Value>
-			<Value ID="Super2xSai">Super2xSai</Value>
+			<Value ID="NTSC">NTSC 2 倍 (blargg)</Value>
+			<Value ID="BisqwitNtscQuarterRes">NTSC 2 倍 (Bisqwit)</Value>
+			<Value ID="BisqwitNtscHalfRes">NTSC 4 倍 (Bisqwit)</Value>
+			<Value ID="BisqwitNtsc">NTSC 8 倍 (Bisqwit)</Value>
+			<Value ID="xBRZ2x">xBRZ 2 倍</Value>
+			<Value ID="xBRZ3x">xBRZ 3 倍</Value>
+			<Value ID="xBRZ4x">xBRZ 4 倍</Value>
+			<Value ID="xBRZ5x">xBRZ 5 倍</Value>
+			<Value ID="xBRZ6x">xBRZ 6 倍</Value>
+			<Value ID="HQ2x">高质量 2 倍</Value>
+			<Value ID="HQ3x">高质量 3 倍</Value>
+			<Value ID="HQ4x">高质量 4 倍</Value>
+			<Value ID="Scale2x">缩放 2 倍</Value>
+			<Value ID="Scale3x">缩放 3 倍</Value>
+			<Value ID="Scale4x">缩放 4 倍</Value>
+			<Value ID="_2xSai">2 倍 Sai</Value>
+			<Value ID="Super2xSai">超级 2 倍 Sai</Value>
 			<Value ID="SuperEagle">SuperEagle</Value>
-			<Value ID="Prescale2x">Prescale 2x</Value>
-			<Value ID="Prescale3x">Prescale 3x</Value>
-			<Value ID="Prescale4x">Prescale 4x</Value>
-			<Value ID="Prescale6x">Prescale 6x</Value>
-			<Value ID="Prescale8x">Prescale 8x</Value>
-			<Value ID="Prescale10x">Prescale 10x</Value>
+			<Value ID="Prescale2x">预缩放 2 倍</Value>
+			<Value ID="Prescale3x">预缩放 3 倍</Value>
+			<Value ID="Prescale4x">预缩放 4 倍</Value>
+			<Value ID="Prescale6x">预缩放 6 倍</Value>
+			<Value ID="Prescale8x">预缩放 8 倍</Value>
+			<Value ID="Prescale10x">预缩放 10 倍</Value>
 		</Enum>
 		<Enum ID="VsDualOutputOption">
 			<Value ID="Both">双机</Value>

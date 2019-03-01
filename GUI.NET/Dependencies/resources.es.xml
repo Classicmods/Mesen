@@ -43,6 +43,8 @@
 			<Control ID="mnuScale2x">2x</Control>
 			<Control ID="mnuScale3x">3x</Control>
 			<Control ID="mnuScale4x">4x</Control>
+			<Control ID="mnuScale5x">5x</Control>
+			<Control ID="mnuScale6x">6x</Control>
 			<Control ID="mnuFullscreen">Pantalla completa</Control>
 			<Control ID="mnuVideoFilter">Filtro de video</Control>
 			<Control ID="mnuNoneFilter">Ninguno</Control>
@@ -114,6 +116,7 @@
 			<Control ID="lblSoundChips">Chip de audio</Control>
 			<Control ID="lblRecording">REC</Control>
 			<Control ID="lblSlowMotion">Cámara lenta</Control>
+			<Control ID="lblRewinding">Rewinding</Control>
 			<Control ID="lblFastForward">Avance rápido</Control>
 		</Form>
 		<Form ID="frmLogWindow" Title="Ventana del registro">
@@ -217,6 +220,12 @@
 			<Control ID="lblDisplayPosition">Posición de pantalla:</Control>
 			<Control ID="chkDisplayInputHorizontally">Mostrar horizontalmente</Control>
 
+			<Control ID="lblSmall">Corto</Control>
+			<Control ID="lblLarge">Largo</Control>
+			<Control ID="lblDeadzone">Controller axis deadzone size:</Control>
+
+			<Control ID="chkHideMousePointerForZapper">Hide mouse pointer when using zapper</Control>
+
 			<Control ID="lblKeyBinding">Advertencia: su configuración actual contiene asignaciones conflictivas - algunas teclas de su teclado o botones del mando se han asignado a varios botones del mando de la NES. Si esto no es intencionado, revise y corrija las asignaciones.</Control>
 		</Form>
 		<Form ID="frmVideoConfig" Title="Opciones de video">
@@ -279,6 +288,8 @@
 
 			<Control ID="tpgAdvanced">Avanzado</Control>
 			<Control ID="lblScreenRotation">Rotación de pantalla:</Control>
+			<Control ID="chkRemoveSpriteLimit">Eliminar el límite de sprites (Reduce el parpadeo en algunos juegos)</Control>
+			<Control ID="chkAdaptiveSpriteLimit">Volver a habilitar el límite de sprites cuando haga falta para prevenir errores gráficos</Control>
 			<Control ID="chkDisableBackground">Deshabilitar fondo</Control>
 			<Control ID="chkDisableSprites">Deshabilitar sprites</Control>
 			<Control ID="chkForceBackgroundFirstColumn">Forzar ver fondo en primera columna</Control>
@@ -297,11 +308,11 @@
 			<Control ID="lblRewindSpeed">Velocidad de rebobinado:</Control>
 
 			<Control ID="tpgAdvanced">Avanzado</Control>
+			<Control ID="lblDeveloperSettings">Recommended settings for developers (homebrew / ROM hacking)</Control>
+			<Control ID="lblMiscSettings">Configuraciones varias</Control>
 			<Control ID="chkUseAlternativeMmc3Irq">Utilizar la versión alternativa de componentes de IRQs de MMC3</Control>
 			<Control ID="chkAllowInvalidInput">Permitir las entradas inválidas (Arriba+Abajo e Izquierda+Derecha al mismo tiempo)</Control>
 			<Control ID="lblRamPowerOnState">Estado inicial de la memoria durante el inicio:</Control>
-			<Control ID="chkRemoveSpriteLimit">Eliminar el límite de sprites (Reduce el parpadeo en algunos juegos)</Control>
-			<Control ID="chkAdaptiveSpriteLimit">Volver a habilitar el límite de sprites cuando haga falta para prevenir errores gráficos</Control>
 			<Control ID="chkEnableOamDecay">Activar la emulación de la degradación de la memoria OAM</Control>
 			<Control ID="chkDisablePpu2004Reads">Impedir la reproducción del registro $2004 de la PPU (Famicom)</Control>
 			<Control ID="chkDisableOamAddrBug">Desactivar la emulación de errores OAMADDR de la PPU</Control>
@@ -499,7 +510,7 @@
 			<Control ID="btnExportSelectedCheats">Trucos seleccionados</Control>
 			<Control ID="mnuExportSelectedCheats">Exportar</Control>
 			<Control ID="tpgCheatFinder">Búsqueda de trucos</Control>
-			<Control ID="grpFilters">Filters</Control>
+			<Control ID="grpFilters">Filtros</Control>
 			<Control ID="btnReset">Restablecer</Control>
 			<Control ID="btnUndo">Deshacer</Control>
 			<Control ID="lblCurrentValue">El valor actual es</Control>
@@ -533,7 +544,7 @@
 		</Form>
 		<Form ID="frmAbout" Title="Acerca de...">
 			<Control ID="labelProductName">Mesen</Control>
-			<Control ID="labelCopyright">© 2018 M. Bibaud (aka Sour)</Control>
+			<Control ID="labelCopyright">© 2019 M. Bibaud (aka Sour)</Control>
 			<Control ID="lblWebsite">Sitio web:</Control>
 			<Control ID="lblLink">www.mesen.ca</Control>
 			<Control ID="labelVersion">Versión:</Control>
@@ -596,8 +607,24 @@
 			<Control ID="mnuFile">Archivo</Control>
 			<Control ID="mnuImportMovie">Importar película</Control>
 			<Control ID="mnuExportMovie">Exportar película</Control>
+			<Control ID="mnuCreateSaveState">Create Save State</Control>
 			<Control ID="mnuResumeGameplay">Continuar el juego</Control>
 			<Control ID="mnuClose">Cerrar</Control>
+
+			<Control ID="mnuOptions">Opciones</Control>
+			<Control ID="mnuVideoScale">Tamaño de video</Control>
+			<Control ID="mnuScale1x">1x</Control>
+			<Control ID="mnuScale2x">2x</Control>
+			<Control ID="mnuScale3x">3x</Control>
+			<Control ID="mnuScale4x">4x</Control>
+			<Control ID="mnuScale5x">5x</Control>
+			<Control ID="mnuScale6x">6x</Control>
+		</Form>
+		<Form ID="frmSelectExportRange" Title="Export specific range...">
+			<Control ID="lblStartTime">Start time:</Control>
+			<Control ID="lblEndTime">End time:</Control>
+			<Control ID="btnOK">Ok</Control>
+			<Control ID="btnCancel">Cancelar</Control>
 		</Form>
 		<Form ID="frmHelp" Title="Opciones de linea de comandos">
 			<Control ID="grpExample">Ejemplo de uso</Control>
@@ -606,7 +633,6 @@
 			<Control ID="tpgAudioOptions">Opciones de audio</Control>
 			<Control ID="tpgEmulationOptions">Opciones de emulación</Control>
 			<Control ID="lblExplanation">Esto iniciará Mesen en modo de pantalla completa con la rom "MyGame.nes" cargada. También usa el filtro NTSC, ajuste a escala 2x y establece la configuración de Overscan. El parámetro "DoNotSaveSettings" se usa para prevenir que las opciones dadas desde la línea de comandos alteren la configuración de Mesen.</Control>
-			<Control ID="txtGeneralOptions">/fullscreen - Inicia Mesen en pantalla completa&#13;&#10;/DoNotSaveSettings - Previene que las opciones se graben en disco (útil para evitar que las opciones de la línea de comandos se conviertan en la configuración predeterminada)</Control>
 		</Form>
 		<Form ID="frmCopyFiles" Title="Por favor espere...">
 			<Control ID="lblCopying">Copiando:</Control>
@@ -742,7 +768,10 @@
 		<Message ID="SaveToFile">Guardar en archivo...</Message>
 
 		<Message ID="MovieSegment">Parte #{0}</Message>
+		<Message ID="MovieExportEntireSegment">Export entire segment</Message>
+		<Message ID="MovieExportSpecificRange">Export specific range...</Message>
 		<Message ID="MovieSaveError">Se produjo un error al intentar guardar el archivo de película.</Message>
+		<Message ID="FileSaveError">An error occurred while trying to save the file.</Message>
 
 		<Message ID="ClearHistory">Limpiar historial</Message>
 		<Message ID="LastFolderUsed">Última carpeta usada</Message>
@@ -750,6 +779,11 @@
 		<Message ID="MouseModeEnabled">Modo de ratón habilitado: presione ESC o pausa para liberar el cursor.</Message>
 		<Message ID="BandaiMicrophone">Micrófono Bandai</Message>
 		<Message ID="DatachBarcodeReader">Lector de código de barras Datach</Message>
+
+		<Message ID="HelpFullscreen">/fullscreen - Inicia Mesen en pantalla completa</Message>
+		<Message ID="HelpDoNotSaveSettings">/DoNotSaveSettings - Previene que las opciones se graben en disco (útil para evitar que las opciones de la línea de comandos se conviertan en la configuración predeterminada)</Message>
+		<Message ID="HelpRecordMovie">/RecordMovie="filename.mmo" - Start recording a movie after the specified game is loaded.</Message>
+		<Message ID="HelpLoadLastSession">/LoadLastSession - Resumes the game in the state it was left in when it was last played.</Message>
 
 		<Message ID="Resume">Continuar</Message>
 		<Message ID="Pause">Pausa</Message>

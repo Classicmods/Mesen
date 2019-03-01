@@ -21,6 +21,7 @@
 #include "KeyManager.h"
 #include "MemoryAccessCounter.h"
 #include "RomData.h"
+#include "LabelManager.h"
 
 #define lua_pushintvalue(name, value) lua_pushliteral(lua, #name); lua_pushinteger(lua, (int)value); lua_settable(lua, -3);
 #define lua_pushdoublevalue(name, value) lua_pushliteral(lua, #name); lua_pushnumber(lua, (double)value); lua_settable(lua, -3);
@@ -106,6 +107,7 @@ int LuaApi::GetLibrary(lua_State *lua)
 		{ "getScriptDataFolder", LuaApi::GetScriptDataFolder },
 		{ "getRomInfo", LuaApi::GetRomInfo },
 		{ "getLogWindowLog", LuaApi::GetLogWindowLog },
+		{ "getLabelAddress", LuaApi::GetLabelAddress },
 		{ NULL,NULL }
 	};
 
@@ -174,6 +176,27 @@ int LuaApi::GetLibrary(lua_State *lua)
 	lua_settable(lua, -3);
 
 	return 1;
+}
+
+int LuaApi::GetLabelAddress(lua_State *lua)
+{
+	LuaCallHelper l(lua);
+	string label = l.ReadString();
+	checkparams();
+	errorCond(label.length() == 0, "label cannot be empty");
+
+	std::shared_ptr<LabelManager> lblMan = _debugger->GetLabelManager();
+	int32_t value = lblMan->GetLabelRelativeAddress(label);
+	if(value == -2) {
+		//Check to see if the label is a multi-byte label instead
+		string mbLabel = label + "+0";
+		value = lblMan->GetLabelRelativeAddress(mbLabel);
+	}
+	errorCond(value == -1, "label out of scope (not mapped to CPU memory)");
+	errorCond(value <= -2, "label not found");
+
+	l.Return(value);
+	return l.ReturnCount();
 }
 
 int LuaApi::ReadMemory(lua_State *lua)
@@ -743,18 +766,36 @@ int LuaApi::GetAccessCounters(lua_State *lua)
 	errorCond(memoryType >= AddressType::Register, "Invalid memory type");
 	checkparams();
 
+	DebugMemoryType debugMemoryType;
 	uint32_t size = 0;
 	switch(memoryType) {
+		default:
 		case AddressType::Register: error("Invalid memory type"); break;
-		case AddressType::InternalRam: size = 0x2000; break;
-		case AddressType::PrgRom: size = _memoryDumper->GetMemorySize(DebugMemoryType::PrgRom); break;
-		case AddressType::WorkRam: size = _memoryDumper->GetMemorySize(DebugMemoryType::WorkRam); break;
-		case AddressType::SaveRam: size = _memoryDumper->GetMemorySize(DebugMemoryType::SaveRam); break;
+
+		case AddressType::InternalRam:
+			debugMemoryType = DebugMemoryType::InternalRam;
+			size = 0x2000;
+			break;
+
+		case AddressType::PrgRom:
+			debugMemoryType = DebugMemoryType::PrgRom;
+			size = _memoryDumper->GetMemorySize(DebugMemoryType::PrgRom);
+			break;
+
+		case AddressType::WorkRam:
+			debugMemoryType = DebugMemoryType::WorkRam;
+			size = _memoryDumper->GetMemorySize(DebugMemoryType::WorkRam);
+			break;
+
+		case AddressType::SaveRam:
+			debugMemoryType = DebugMemoryType::SaveRam;
+			size = _memoryDumper->GetMemorySize(DebugMemoryType::SaveRam);
+			break;
 	}
 
-	vector<uint32_t> counts;
+	vector<int32_t> counts;
 	counts.resize(size, 0);
-	_debugger->GetMemoryAccessCounter()->GetAccessCounts(memoryType, operationType, counts.data(), false);
+	_debugger->GetMemoryAccessCounter()->GetAccessCounts(0, size, debugMemoryType, operationType, counts.data());
 
 	lua_newtable(lua);
 	for(uint32_t i = 0; i < size; i++) {

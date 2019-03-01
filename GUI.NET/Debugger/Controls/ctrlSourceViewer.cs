@@ -11,6 +11,8 @@ using static Mesen.GUI.Debugger.Ld65DbgImporter;
 using System.IO;
 using Mesen.GUI.Config;
 using Mesen.GUI.Controls;
+using System.Text.RegularExpressions;
+using System.Diagnostics;
 
 namespace Mesen.GUI.Debugger.Controls
 {
@@ -33,6 +35,20 @@ namespace Mesen.GUI.Debugger.Controls
 			base.OnLoad(e);
 			if(!IsDesignMode) {
 				_codeViewerActions = new CodeViewerActions(this, true);
+
+				ctrlFindOccurrences.Viewer = this;
+				splitContainer.Panel2Collapsed = true;
+
+				this.SymbolProvider = DebugWorkspaceManager.SymbolProvider;
+				DebugWorkspaceManager.SymbolProviderChanged += UpdateSymbolProvider;
+			}
+		}
+
+		private void UpdateSymbolProvider(Ld65DbgImporter symbolProvider)
+		{
+			this.SymbolProvider = symbolProvider;
+			if(symbolProvider == null && this.Visible) {
+				_codeViewerActions.SwitchView();
 			}
 		}
 
@@ -53,6 +69,11 @@ namespace Mesen.GUI.Debugger.Controls
 			}
 		}
 
+		public void SetMessage(TextboxMessageInfo message)
+		{
+			this.ctrlCodeViewer.SetMessage(message);
+		}
+
 		private List<string> _lineNumberNotes = new List<string>();
 		private void UpdateCode()
 		{
@@ -68,17 +89,30 @@ namespace Mesen.GUI.Debugger.Controls
 			_lineNumberNotes = new List<string>();
 			List<string> codeLines = new List<string>();
 
+			byte[] prgRomContent = InteropEmu.DebugGetMemoryState(DebugMemoryType.PrgRom);
+
 			bool isC = CurrentFile.Name.EndsWith(".h") || CurrentFile.Name.EndsWith(".c");
-			int index = 0;
+			int lineIndex = 0;
 			foreach(string line in CurrentFile.Data) {
 				string l = line.Replace("\t", "  ");
 
 				addressing.Add("");
 
-				int prgAddress = _symbolProvider.GetPrgAddress(CurrentFile.ID, index);
+				int prgAddress = _symbolProvider.GetPrgAddress(CurrentFile.ID, lineIndex);
+
+				if(prgAddress >= 0) {
+					int opSize = frmOpCodeTooltip.GetOpSize(prgRomContent[prgAddress]);
+					string byteCode = "";
+					for(int i = prgAddress, end = prgAddress + opSize; i < end && i < prgRomContent.Length; i++) {
+						byteCode += "$" + prgRomContent[i].ToString("X2") + " ";
+					}
+					lineNotes.Add(byteCode);
+				} else {
+					lineNotes.Add("");
+				}
+
 				int relativeAddress = InteropEmu.DebugGetRelativeAddress((uint)prgAddress, AddressType.PrgRom);
 				lineNumbers.Add(relativeAddress);
-				lineNotes.Add("");
 				_lineNumberNotes.Add(prgAddress >= 0 ? prgAddress.ToString("X4") : "");
 
 				string trimmed = l.TrimStart();
@@ -99,7 +133,7 @@ namespace Mesen.GUI.Debugger.Controls
 					comments.Add("");
 					codeLines.Add(trimmed);
 				}
-				index++;
+				lineIndex++;
 			}
 
 			ctrlCodeViewer.CodeHighlightingEnabled = !isC;
@@ -175,7 +209,7 @@ namespace Mesen.GUI.Debugger.Controls
 
 		private void mnuToggleBreakpoint_Click(object sender, EventArgs e)
 		{
-			ToggleBreakpoint();
+			_codeViewerActions.ToggleBreakpoint(false);
 		}
 
 		public AddressTypeInfo GetAddressInfo(int lineIndex)
@@ -221,29 +255,25 @@ namespace Mesen.GUI.Debugger.Controls
 			}
 		}
 
-		public void ToggleBreakpoint()
-		{
-			AddressTypeInfo info = GetAddressInfo(ctrlCodeViewer.SelectedLine);
-			if(info.Address >= 0) {
-				BreakpointManager.ToggleBreakpoint(-1, info, false);
-			}
-		}
-		
 		private void ctrlCodeViewer_MouseMove(object sender, MouseEventArgs e)
 		{
 			if(e.Location.X < this.ctrlCodeViewer.CodeMargin / 4) {
-				this.ctrlCodeViewer.ContextMenuStrip = contextMenuMargin;
+				if(this.ctrlCodeViewer.ContextMenuStrip != contextMenuMargin) {
+					this.ctrlCodeViewer.ContextMenuStrip = contextMenuMargin;
+					ThemeHelper.FixMonoColors(contextMenuMargin);
+				}
 			} else {
-				this.ctrlCodeViewer.ContextMenuStrip = _codeViewerActions.contextMenu;
+				if(this.ctrlCodeViewer.ContextMenuStrip != _codeViewerActions.contextMenu) {
+					this.ctrlCodeViewer.ContextMenuStrip = _codeViewerActions.contextMenu;
+					ThemeHelper.FixMonoColors(this.ctrlCodeViewer.ContextMenuStrip);
+				}
 			}
-
-			_tooltipManager.ProcessMouseMove(e.Location);
 		}
 
 		private void ctrlCodeViewer_MouseDown(object sender, MouseEventArgs e)
 		{
 			if(e.Button == MouseButtons.Left && e.Location.X < this.ctrlCodeViewer.CodeMargin / 4) {
-				ToggleBreakpoint();
+				_codeViewerActions.ToggleBreakpoint(false);
 			}
 		}
 
@@ -305,20 +335,21 @@ namespace Mesen.GUI.Debugger.Controls
 			}
 		}
 
-		private void ctrlCodeViewer_MouseLeave(object sender, EventArgs e)
+		public void ScrollToFileLine(string filename, int lineNumber)
 		{
-			_tooltipManager.Close();
-		}
-
-		private void ctrlCodeViewer_ScrollPositionChanged(object sender, EventArgs e)
-		{
-			_tooltipManager?.Close();
+			foreach(Ld65DbgImporter.FileInfo fileInfo in cboFile.Items) {
+				if(fileInfo.Name == filename) {
+					cboFile.SelectedItem = fileInfo;
+					ctrlCodeViewer.ScrollToLineIndex(lineNumber);
+					break;
+				}
+			}
 		}
 
 		public void ScrollToAddress(AddressTypeInfo addressInfo, bool scrollToTop = false)
 		{
 			if(addressInfo.Address >= 0 && addressInfo.Type == AddressType.PrgRom) {
-				LineInfo line = _symbolProvider.GetSourceCodeLineInfo(addressInfo.Address);
+				LineInfo line = _symbolProvider?.GetSourceCodeLineInfo(addressInfo.Address);
 				if(line != null) {
 					foreach(Ld65DbgImporter.FileInfo fileInfo in cboFile.Items) {
 						if(fileInfo.ID == line.FileID) {
@@ -340,7 +371,7 @@ namespace Mesen.GUI.Debugger.Controls
 			AddressTypeInfo addressInfo = new AddressTypeInfo();
 			InteropEmu.DebugGetAbsoluteAddressAndType((uint)cpuAddress, addressInfo);
 			if(addressInfo.Address >= 0 && addressInfo.Type == AddressType.PrgRom) {
-				LineInfo line = _symbolProvider.GetSourceCodeLineInfo(addressInfo.Address);
+				LineInfo line = _symbolProvider?.GetSourceCodeLineInfo(addressInfo.Address);
 				return CurrentFile.ID == line?.FileID;
 			}
 			return false;
@@ -363,9 +394,92 @@ namespace Mesen.GUI.Debugger.Controls
 			//Not supported
 		}
 
+		public void EditSourceFile()
+		{
+			if(string.IsNullOrWhiteSpace(ConfigManager.Config.DebugInfo.ExternalEditorPath) || !File.Exists(ConfigManager.Config.DebugInfo.ExternalEditorPath)) {
+				using(frmExternalEditorConfig frm = new frmExternalEditorConfig()) {
+					frm.ShowDialog(null, this.ParentForm);
+				}
+			}
+
+			if(File.Exists(ConfigManager.Config.DebugInfo.ExternalEditorPath)) {
+				string filePath = Path.Combine(_symbolProvider.DbgPath, CurrentFile.Name);
+				if(File.Exists(filePath)) {
+					filePath = "\"" + filePath + "\"";
+					string lineNumber = (ctrlCodeViewer.SelectedLine + 1).ToString();
+
+					Process.Start(
+						ConfigManager.Config.DebugInfo.ExternalEditorPath,
+						ConfigManager.Config.DebugInfo.ExternalEditorArguments.Replace("%F", filePath).Replace("%f", filePath).Replace("%L", lineNumber).Replace("%l", lineNumber)
+					);
+				}
+			}
+		}
+		
+		public void FindAllOccurrences(SymbolInfo symbol)
+		{
+			List<FindAllOccurrenceResult> results = new List<FindAllOccurrenceResult>();
+
+			List<ReferenceInfo> references = _symbolProvider.GetSymbolReferences(symbol);
+			ReferenceInfo definition = _symbolProvider.GetSymbolDefinition(symbol);
+			if(definition != null) {
+				references.Insert(0, definition);
+			}
+
+			foreach(ReferenceInfo reference in references) {
+				results.Add(new FindAllOccurrenceResult() {
+					MatchedLine = reference.LineContent.Trim(),
+					Location = Path.GetFileName(reference.FileName) + ":" + (reference.LineNumber + 1).ToString(),
+					Destination = new GoToDestination() {
+						CpuAddress = -1,
+						Line = reference.LineNumber,
+						File = reference.FileName,
+					}
+				});
+			}
+
+			ctrlFindOccurrences.FindAllOccurrences(symbol.Name, results);
+			this.splitContainer.Panel2Collapsed = false;
+		}
+
 		public void FindAllOccurrences(string text, bool matchWholeWord, bool matchCase)
 		{
-			//Not supported (yet?)
+			List<FindAllOccurrenceResult> results = new List<FindAllOccurrenceResult>();
+
+			string regexPattern;
+			if(matchWholeWord) {
+				regexPattern = $"([^0-9a-zA-Z_#@]+|^){Regex.Escape(text)}([^0-9a-zA-Z_#@]+|$)";
+			} else {
+				regexPattern = Regex.Escape(text);
+			}
+
+			Regex regex = new Regex(regexPattern, matchCase ? RegexOptions.None : RegexOptions.IgnoreCase);
+			foreach(Ld65DbgImporter.FileInfo file in _symbolProvider.Files.Values) {
+				if(file.Data != null && file.Data.Length > 0 && !file.Name.ToLower().EndsWith(".chr")) {
+					for(int i = 0; i < file.Data.Length; i++) {
+						string line = file.Data[i];
+						if(regex.IsMatch(line)) {
+							results.Add(new FindAllOccurrenceResult() {
+								MatchedLine = line.Trim(),
+								Location = Path.GetFileName(file.Name) + ":" + (i + 1).ToString(),
+								Destination = new GoToDestination() {
+									CpuAddress = -1,
+									Line = i,
+									File = file.Name,
+								}
+							});
+						}
+					}
+				}
+			}
+
+			ctrlFindOccurrences.FindAllOccurrences(text, results);
+			this.splitContainer.Panel2Collapsed = false;
+		}
+
+		private void ctrlFindOccurrences_OnSearchResultsClosed(object sender, EventArgs e)
+		{
+			this.splitContainer.Panel2Collapsed = true;
 		}
 
 		#region Scrollbar / Code highlighting
@@ -386,7 +500,6 @@ namespace Mesen.GUI.Debugger.Controls
 
 			public LineProperties GetLineStyle(int cpuAddress, int lineIndex)
 			{
-				DebugInfo info = ConfigManager.Config.DebugInfo;
 				LineProperties props = new LineProperties();
 
 				int nextLineIndex = lineIndex + 1;
@@ -404,7 +517,7 @@ namespace Mesen.GUI.Debugger.Controls
 					)
 				);
 
-				int prgAddress = _viewer._symbolProvider.GetPrgAddress(_viewer.CurrentFile.ID, lineIndex);
+				int prgAddress = _viewer._symbolProvider?.GetPrgAddress(_viewer.CurrentFile.ID, lineIndex) ?? -1;
 
 				if(prgAddress >= 0) {
 					AddressTypeInfo addressInfo = new AddressTypeInfo();
@@ -415,9 +528,7 @@ namespace Mesen.GUI.Debugger.Controls
 				}
 
 				if(isActiveStatement) {
-					props.FgColor = Color.Black;
-					props.TextBgColor = info.CodeActiveStatementColor;
-					props.Symbol |= LineSymbol.Arrow;
+					ctrlDebuggerCode.LineStyleProvider.ConfigureActiveStatement(props);
 				}
 
 				return props;

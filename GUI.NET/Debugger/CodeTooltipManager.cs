@@ -6,13 +6,16 @@ using System.Drawing;
 using System.Globalization;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace Mesen.GUI.Debugger
 {
-	class CodeTooltipManager
+	class CodeTooltipManager : IDisposable
 	{
+		public static Regex LabelArrayFormat = new Regex("(.*)\\+(\\d+)", RegexOptions.Compiled);
+
 		private string _hoverLastWord = "";
 		private int _hoverLastLineAddress = -1;
 		private Point _previousLocation;
@@ -27,6 +30,11 @@ namespace Mesen.GUI.Debugger
 		{
 			_owner = owner;
 			_codeViewer = codeViewer;
+
+			_codeViewer.MouseMove += ctrlCodeViewer_MouseMove;
+			_codeViewer.MouseLeave += ctrlCodeViewer_MouseLeave;
+			_codeViewer.MouseDown += ctrlCodeViewer_MouseDown;
+			_codeViewer.ScrollPositionChanged += ctrlCodeViewer_ScrollPositionChanged;
 		}
 
 		public void ShowTooltip(string word, Dictionary<string, string> values, int lineAddress, AddressTypeInfo previewAddress)
@@ -38,10 +46,7 @@ namespace Mesen.GUI.Debugger
 			Form parentForm = _owner.FindForm();
 
 			if(_hoverLastWord != word || _hoverLastLineAddress != lineAddress || _codeTooltip == null) {
-				if(_codeTooltip != null) {
-					_codeTooltip.Close();
-					_codeTooltip = null;
-				}
+				this.Close();
 
 				if(ConfigManager.Config.DebugInfo.ShowOpCodeTooltips && frmOpCodeTooltip.IsOpCode(word)) {
 					_codeTooltip = new frmOpCodeTooltip(parentForm, word, lineAddress);
@@ -83,14 +88,14 @@ namespace Mesen.GUI.Debugger
 			this.ShowTooltip(word, values, -1, addressInfo);
 		}
 
-		private void DisplayLabelTooltip(string word, CodeLabel label)
+		private void DisplayLabelTooltip(string word, CodeLabel label, int? arrayIndex = null)
 		{
-			int relativeAddress = InteropEmu.DebugGetRelativeAddress(label.Address, label.AddressType);
+			int relativeAddress = InteropEmu.DebugGetRelativeAddress((uint)(label.Address + (arrayIndex ?? 0)), label.AddressType);
 			byte byteValue = relativeAddress >= 0 ? InteropEmu.DebugGetMemoryValue(DebugMemoryType.CpuMemory, (UInt32)relativeAddress) : (byte)0;
 			UInt16 wordValue = relativeAddress >= 0 ? (UInt16)(byteValue | (InteropEmu.DebugGetMemoryValue(DebugMemoryType.CpuMemory, (UInt32)relativeAddress + 1) << 8)) : (UInt16)0;
 
 			var values = new Dictionary<string, string>() {
-				{ "Label", label.Label },
+				{ "Label", label.Label + (arrayIndex != null ? $"+{arrayIndex.Value}" : "") },
 				{ "Address", "$" + relativeAddress.ToString("X4") },
 				{ "Value", (relativeAddress >= 0 ? $"${byteValue.ToString("X2")} (byte){Environment.NewLine}${wordValue.ToString("X4")} (word)" : "n/a") },
 			};
@@ -102,25 +107,27 @@ namespace Mesen.GUI.Debugger
 			ShowTooltip(word, values, -1, new AddressTypeInfo() { Address = (int)label.Address, Type = label.AddressType });
 		}
 
-		private void DisplaySymbolTooltip(Ld65DbgImporter.SymbolInfo symbol)
+		private void DisplaySymbolTooltip(Ld65DbgImporter.SymbolInfo symbol, int? arrayIndex = null)
 		{
-			int relativeAddress = symbol.Address.HasValue ? symbol.Address.Value : -1;
-			byte byteValue = relativeAddress >= 0 ? InteropEmu.DebugGetMemoryValue(DebugMemoryType.CpuMemory, (UInt32)relativeAddress) : (byte)0;
-			UInt16 wordValue = relativeAddress >= 0 ? (UInt16)(byteValue | (InteropEmu.DebugGetMemoryValue(DebugMemoryType.CpuMemory, (UInt32)relativeAddress + 1) << 8)) : (UInt16)0;
-
 			AddressTypeInfo addressInfo = SymbolProvider.GetSymbolAddressInfo(symbol);
 
-			if(addressInfo != null) {
+			if(addressInfo != null && addressInfo.Address >= 0) {
+				int relativeAddress = InteropEmu.DebugGetRelativeAddress((uint)(addressInfo.Address + (arrayIndex ?? 0)), addressInfo.Type);
+				byte byteValue = relativeAddress >= 0 ? InteropEmu.DebugGetMemoryValue(DebugMemoryType.CpuMemory, (UInt32)relativeAddress) : (byte)0;
+				UInt16 wordValue = relativeAddress >= 0 ? (UInt16)(byteValue | (InteropEmu.DebugGetMemoryValue(DebugMemoryType.CpuMemory, (UInt32)relativeAddress + 1) << 8)) : (UInt16)0;
+
 				var values = new Dictionary<string, string>() {
-					{ "Symbol", symbol.Name }
+					{ "Symbol", symbol.Name + (arrayIndex != null ? $"+{arrayIndex.Value}" : "") }
 				};
 
 				if(relativeAddress >= 0) {
 					values["CPU Address"] = "$" + relativeAddress.ToString("X4");
-				};
+				} else {
+					values["CPU Address"] = "<out of scope>";
+				}
 
 				if(addressInfo.Type == AddressType.PrgRom) {
-					values["PRG Offset"] = "$" + addressInfo.Address.ToString("X4");
+					values["PRG Offset"] = "$" + (addressInfo.Address + (arrayIndex ?? 0)).ToString("X4");
 				}
 
 				values["Value"] = (relativeAddress >= 0 ? $"${byteValue.ToString("X2")} (byte){Environment.NewLine}${wordValue.ToString("X4")} (word)" : "n/a");
@@ -129,7 +136,7 @@ namespace Mesen.GUI.Debugger
 			} else {
 				var values = new Dictionary<string, string>() {
 					{ "Symbol", symbol.Name },
-					{ "Constant", "$" + relativeAddress.ToString("X2") }
+					{ "Constant", symbol.Address.HasValue ? ("$" + symbol.Address.Value.ToString("X2")) : "<unknown>" }
 				};
 				ShowTooltip(symbol.Name, values, -1, addressInfo);
 			}
@@ -156,7 +163,7 @@ namespace Mesen.GUI.Debugger
 								DisplayAddressTooltip(word, address);
 								closeExistingPopup = false;
 							} else {
-								DisplayLabelTooltip(word, label);
+								DisplayLabelTooltip(word, label, 0);
 								closeExistingPopup = false;
 							}
 						} else {
@@ -165,20 +172,27 @@ namespace Mesen.GUI.Debugger
 						}
 					} catch { }
 				} else {
+					Match arrayMatch = LabelArrayFormat.Match(word);
+					int? arrayIndex = null;
+					if(arrayMatch.Success) {
+						word = arrayMatch.Groups[1].Value;
+						arrayIndex = Int32.Parse(arrayMatch.Groups[2].Value);
+					}
+
 					int address = _codeViewer.GetLineNumberAtPosition(location.Y);
 					if(SymbolProvider != null) {
 						int rangeStart, rangeEnd;
 						if(_codeViewer.GetNoteRangeAtLocation(location.Y, out rangeStart, out rangeEnd)) {
 							Ld65DbgImporter.SymbolInfo symbol = SymbolProvider.GetSymbol(word, rangeStart, rangeEnd);
 							if(symbol != null) {
-								DisplaySymbolTooltip(symbol);
+								DisplaySymbolTooltip(symbol, arrayIndex);
 								return;
 							}
 						}
 					} else {
 						CodeLabel label = LabelManager.GetLabel(word);
 						if(label != null) {
-							DisplayLabelTooltip(word, label);
+							DisplayLabelTooltip(word, label, arrayIndex);
 							return;
 						}
 					}
@@ -193,6 +207,34 @@ namespace Mesen.GUI.Debugger
 					this.Close();
 				}
 			}
+		}
+
+		private void ctrlCodeViewer_MouseMove(object sender, MouseEventArgs e)
+		{
+			ProcessMouseMove(e.Location);
+		}
+
+		private void ctrlCodeViewer_MouseLeave(object sender, EventArgs e)
+		{
+			Close();
+		}
+
+		private void ctrlCodeViewer_MouseDown(object sender, MouseEventArgs e)
+		{
+			Close();
+		}
+
+		private void ctrlCodeViewer_ScrollPositionChanged(object sender, EventArgs e)
+		{
+			Close();
+		}
+
+		public void Dispose()
+		{
+			_codeViewer.MouseMove -= ctrlCodeViewer_MouseMove;
+			_codeViewer.MouseLeave -= ctrlCodeViewer_MouseLeave;
+			_codeViewer.MouseDown -= ctrlCodeViewer_MouseDown;
+			_codeViewer.ScrollPositionChanged -= ctrlCodeViewer_ScrollPositionChanged;
 		}
 	}
 }

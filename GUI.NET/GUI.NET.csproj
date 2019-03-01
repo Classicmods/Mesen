@@ -279,7 +279,13 @@
     <Compile Include="Controls\ctrlLoadingRom.Designer.cs">
       <DependentUpon>ctrlLoadingRom.cs</DependentUpon>
     </Compile>
+    <Compile Include="Controls\ctrlMesenContextMenuStrip.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="Controls\ctrlMesenMenuStrip.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Controls\ctrlMesenPictureBox.cs">
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="Controls\ctrlMesenToolStrip.cs">
@@ -463,6 +469,12 @@
     <Compile Include="Debugger\Controls\ctrlScanlineCycleSelect.Designer.cs">
       <DependentUpon>ctrlScanlineCycleSelect.cs</DependentUpon>
     </Compile>
+    <Compile Include="Debugger\Controls\ctrlSearchResult.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Debugger\Controls\ctrlSearchResult.Designer.cs">
+      <DependentUpon>ctrlSearchResult.cs</DependentUpon>
+    </Compile>
     <Compile Include="Debugger\Controls\ctrlTextHooker.cs">
       <SubType>UserControl</SubType>
     </Compile>
@@ -542,7 +554,9 @@
     <Compile Include="Debugger\Controls\ApuViewer\ctrlSquareInfo.Designer.cs">
       <DependentUpon>ctrlSquareInfo.cs</DependentUpon>
     </Compile>
-    <Compile Include="Debugger\Controls\ctrlTextbox.cs" />
+    <Compile Include="Debugger\Controls\ctrlTextbox.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="Debugger\Controls\ctrlTextbox.Designer.cs">
       <DependentUpon>ctrlTextbox.cs</DependentUpon>
     </Compile>
@@ -649,6 +663,24 @@
     </Compile>
     <Compile Include="Debugger\frmAssembler.Designer.cs">
       <DependentUpon>frmAssembler.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Debugger\frmExternalEditorConfig.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Debugger\frmExternalEditorConfig.Designer.cs">
+      <DependentUpon>frmExternalEditorConfig.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Debugger\frmGoToAll.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Debugger\frmGoToAll.Designer.cs">
+      <DependentUpon>frmGoToAll.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Debugger\frmProfiler.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Debugger\frmProfiler.Designer.cs">
+      <DependentUpon>frmProfiler.cs</DependentUpon>
     </Compile>
     <Compile Include="Debugger\frmSetScriptTimeout.cs">
       <SubType>Form</SubType>
@@ -812,6 +844,12 @@
     <Compile Include="Debugger\frmTraceLogger.Designer.cs">
       <DependentUpon>frmTraceLogger.cs</DependentUpon>
     </Compile>
+    <Compile Include="Debugger\frmWatchWindow.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Debugger\frmWatchWindow.Designer.cs">
+      <DependentUpon>frmWatchWindow.cs</DependentUpon>
+    </Compile>
     <Compile Include="Debugger\HdPackCopyHelper.cs" />
     <Compile Include="Debugger\HexBox\BuiltInContextMenu.cs">
       <SubType>Component</SubType>
@@ -839,6 +877,7 @@
     <Compile Include="Debugger\LabelManager.cs" />
     <Compile Include="Debugger\NesasmFnsImporter.cs" />
     <Compile Include="Debugger\MesenLabelFile.cs" />
+    <Compile Include="Debugger\PpuViewerHelper.cs" />
     <Compile Include="Debugger\TblLoader.cs" />
     <Compile Include="Debugger\TextboxHistory.cs" />
     <Compile Include="Debugger\TooltipForm.cs">
@@ -1170,6 +1209,12 @@
     <Compile Include="Forms\frmRecordAvi.Designer.cs">
       <DependentUpon>frmRecordAvi.cs</DependentUpon>
     </Compile>
+    <Compile Include="Forms\frmSelectExportRange.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\frmSelectExportRange.Designer.cs">
+      <DependentUpon>frmSelectExportRange.cs</DependentUpon>
+    </Compile>
     <Compile Include="Forms\frmSelectRom.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -1221,12 +1266,26 @@
     <Compile Include="GoogleDriveIntegration\GoogleDriveAccessor.cs" />
     <Compile Include="GoogleDriveIntegration\MesenCodeReceiver.cs" />
     <Compile Include="InteropEmu.cs" />
+    <Compile Include="MonoToolStripHelper.cs" />
+    <Compile Include="ThemeHelper.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ResourceManager.cs" />
     <Compile Include="RuntimeChecker.cs" />
     <Compile Include="SingleInstance.cs" />
     <Compile Include="TestRunner.cs" />
+    <None Include="Resources\MoveDown.png" />
+    <None Include="Resources\MoveUp.png" />
+    <None Include="Resources\NudDownArrowDarkTheme.png" />
+    <None Include="Resources\DownArrowDarkTheme.png" />
+    <None Include="Resources\NudUpArrowDarkTheme.png" />
+    <None Include="Resources\PerfTracker.png" />
+    <None Include="Resources\Zoom2x.png" />
+    <None Include="Resources\Expand.png" />
+    <None Include="Resources\Collapse.png" />
+    <None Include="Resources\RegisterIcon.png" />
+    <None Include="Resources\JumpTarget.png" />
+    <None Include="Resources\Cut.png" />
     <None Include="Resources\HistoryViewer.png" />
     <None Include="Resources\VsButton4.png" />
     <None Include="Resources\VsButton3.png" />
@@ -1330,17 +1389,32 @@
     <EmbeddedResource Include="Debugger\Controls\ctrlScanlineCycleSelect.resx">
       <DependentUpon>ctrlScanlineCycleSelect.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="Debugger\Controls\ctrlSearchResult.resx">
+      <DependentUpon>ctrlSearchResult.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Debugger\Controls\ctrlTextHooker.resx">
       <DependentUpon>ctrlTextHooker.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Debugger\Controls\ctrlSourceViewer.resx">
       <DependentUpon>ctrlSourceViewer.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="Debugger\frmExternalEditorConfig.resx">
+      <DependentUpon>frmExternalEditorConfig.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Debugger\frmGoToAll.resx">
+      <DependentUpon>frmGoToAll.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Debugger\frmProfiler.resx">
+      <DependentUpon>frmProfiler.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Debugger\frmSetScriptTimeout.resx">
       <DependentUpon>frmSetScriptTimeout.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Debugger\frmTextHooker.resx">
       <DependentUpon>frmTextHooker.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Debugger\frmWatchWindow.resx">
+      <DependentUpon>frmWatchWindow.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Dependencies\LuaScripts\Example.lua">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
@@ -1703,6 +1777,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Forms\frmRecordAvi.resx">
       <DependentUpon>frmRecordAvi.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\frmSelectExportRange.resx">
+      <DependentUpon>frmSelectExportRange.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Forms\frmSelectRom.resx">
       <DependentUpon>frmSelectRom.cs</DependentUpon>

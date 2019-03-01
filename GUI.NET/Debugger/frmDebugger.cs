@@ -13,6 +13,7 @@ using Mesen.GUI.Config;
 using Mesen.GUI.Debugger.Controls;
 using Mesen.GUI.Forms;
 using Mesen.GUI.Controls;
+using System.Collections.ObjectModel;
 
 namespace Mesen.GUI.Debugger
 {
@@ -21,12 +22,23 @@ namespace Mesen.GUI.Debugger
 		private bool _debuggerInitialized = false;
 		private bool _firstBreak = true;
 		private bool _wasPaused = false;
+		private bool _executionIsStopped = false; //Flag used to break on the first instruction after power cycle/reset if execution was stopped before the reset
 		private int _previousCycle = 0;
 
 		private InteropEmu.NotificationListener _notifListener;
 		private ICodeViewer _lastCodeWindow;
 		private Size _minimumSize;
 		private int _topPanelMinSize;
+
+		public ICodeViewer LastCodeWindow
+		{
+			get { return _lastCodeWindow; }
+			set
+			{
+				_lastCodeWindow = value;
+				UpdateCodeMenu();
+			}
+		}
 
 		public frmDebugger()
 		{
@@ -35,15 +47,13 @@ namespace Mesen.GUI.Debugger
 
 		protected override void OnLoad(EventArgs e)
 		{
+			this.InitShortcuts();
+			this.InitToolbar();
+
 			base.OnLoad(e);
 
 			_minimumSize = this.MinimumSize;
 			_topPanelMinSize = splitContainer.Panel1MinSize;
-
-			if(Program.IsMono) {
-				//This doesn't work in Mono (menu is blank) - hide it for now
-				mnuCode.Visible = false;
-			}
 
 			_wasPaused = InteropEmu.IsPaused();
 			bool debuggerAlreadyRunning = InteropEmu.DebugIsDebuggerRunning();
@@ -59,12 +69,9 @@ namespace Mesen.GUI.Debugger
 			ctrlSourceViewer.CodeViewer.BaseFont = font;
 			ctrlSourceViewerSplit.CodeViewer.BaseFont = font;
 
-			this.InitShortcuts();
-			this.InitToolbar();
-
 			this.UpdateWorkspace();
 			this.AutoLoadCdlFiles();
-			this.AutoLoadDbgFiles(true);
+			DebugWorkspaceManager.AutoLoadDbgFiles(true);
 
 			if(!Program.IsMono) {
 				this.mnuSplitView.Checked = ConfigManager.Config.DebugInfo.SplitView;
@@ -96,6 +103,7 @@ namespace Mesen.GUI.Debugger
 			this.mnuShowPpuMemoryMapping.Checked = ConfigManager.Config.DebugInfo.ShowPpuMemoryMapping;
 			this.mnuAutoLoadDbgFiles.Checked = ConfigManager.Config.DebugInfo.AutoLoadDbgFiles;
 			this.mnuAutoLoadCdlFiles.Checked = ConfigManager.Config.DebugInfo.AutoLoadCdlFiles;
+			this.mnuEnableSubInstructionBreakpoints.Checked = !ConfigManager.Config.DebugInfo.BreakOnFirstCycle;
 			this.mnuBreakOnReset.Checked = ConfigManager.Config.DebugInfo.BreakOnReset;
 			this.mnuBreakOnInit.Checked = ConfigManager.Config.DebugInfo.BreakOnInit;
 			this.mnuBreakOnPlay.Checked = ConfigManager.Config.DebugInfo.BreakOnPlay;
@@ -116,6 +124,9 @@ namespace Mesen.GUI.Debugger
 			this.mnuShowVerifiedData.Checked = ConfigManager.Config.DebugInfo.ShowVerifiedData;
 			this.mnuShowUnidentifiedData.Checked = ConfigManager.Config.DebugInfo.ShowUnidentifiedData;
 
+			this.mnuShowBreakNotifications.Checked = ConfigManager.Config.DebugInfo.ShowBreakNotifications;
+			this.mnuShowInstructionProgression.Checked = ConfigManager.Config.DebugInfo.ShowInstructionProgression;
+			this.mnuShowSelectionLength.Checked = ConfigManager.Config.DebugInfo.ShowSelectionLength;
 			this.mnuAlwaysScrollToCenter.Checked = ConfigManager.Config.DebugInfo.AlwaysScrollToCenter;
 			this.mnuRefreshWhileRunning.Checked = ConfigManager.Config.DebugInfo.RefreshWhileRunning;
 			this.mnuShowMemoryValues.Checked = ConfigManager.Config.DebugInfo.ShowMemoryValuesInCodeWindow;
@@ -154,14 +165,9 @@ namespace Mesen.GUI.Debugger
 
 			this.mnuUseVerticalLayout.Checked = ConfigManager.Config.DebugInfo.VerticalLayout;
 
-			_lastCodeWindow = ctrlDebuggerCode;
+			LastCodeWindow = ctrlDebuggerCode;
 
-			this.toolTip.SetToolTip(this.picWatchHelp,
-				frmBreakpoint.GetConditionTooltip(true) + Environment.NewLine + Environment.NewLine +
-				"Additionally, the watch window supports a syntax to display X bytes starting from a specific address. e.g:" + Environment.NewLine +
-				"[$10, 16]: Display 16 bytes starting from address $10" + Environment.NewLine +
-				"[MyLabel, 4]: Display 4 bytes starting from the address the specified label (MyLabel) refers to"
-			);
+			this.toolTip.SetToolTip(this.picWatchHelp, ctrlWatch.GetTooltipText());
 
 			_notifListener = new InteropEmu.NotificationListener(ConfigManager.Config.DebugInfo.DebugConsoleId);
 			_notifListener.OnNotification += _notifListener_OnNotification;
@@ -201,18 +207,22 @@ namespace Mesen.GUI.Debugger
 
 			ctrlDebuggerCode.CodeViewerActions.OnSetNextStatement += ctrlDebuggerCode_OnSetNextStatement;
 			ctrlDebuggerCode.CodeViewerActions.OnShowInSplitView += ctrlDebuggerCode_OnShowInSplitView;
+			ctrlDebuggerCode.CodeViewerActions.OnGoToDestination += ctrlDebuggerCode_OnGoToDestination;
 			ctrlDebuggerCode.CodeViewerActions.OnSwitchView += ctrlDebuggerCode_OnSwitchView;
 
 			ctrlDebuggerCodeSplit.CodeViewerActions.OnSetNextStatement += ctrlDebuggerCode_OnSetNextStatement;
 			ctrlDebuggerCodeSplit.CodeViewerActions.OnShowInSplitView += ctrlDebuggerCode_OnShowInSplitView;
+			ctrlDebuggerCodeSplit.CodeViewerActions.OnGoToDestination += ctrlDebuggerCode_OnGoToDestination;
 			ctrlDebuggerCodeSplit.CodeViewerActions.OnSwitchView += ctrlDebuggerCode_OnSwitchView;
 
 			ctrlSourceViewer.CodeViewerActions.OnSetNextStatement += ctrlDebuggerCode_OnSetNextStatement;
 			ctrlSourceViewer.CodeViewerActions.OnShowInSplitView += ctrlDebuggerCode_OnShowInSplitView;
+			ctrlSourceViewer.CodeViewerActions.OnGoToDestination += ctrlDebuggerCode_OnGoToDestination;
 			ctrlSourceViewer.CodeViewerActions.OnSwitchView += ctrlDebuggerCode_OnSwitchView;
 
 			ctrlSourceViewerSplit.CodeViewerActions.OnSetNextStatement += ctrlDebuggerCode_OnSetNextStatement;
 			ctrlSourceViewerSplit.CodeViewerActions.OnShowInSplitView += ctrlDebuggerCode_OnShowInSplitView;
+			ctrlSourceViewerSplit.CodeViewerActions.OnGoToDestination += ctrlDebuggerCode_OnGoToDestination;
 			ctrlSourceViewerSplit.CodeViewerActions.OnSwitchView += ctrlDebuggerCode_OnSwitchView;
 
 			ctrlDebuggerCode.SetConfig(ConfigManager.Config.DebugInfo.LeftView);
@@ -248,10 +258,12 @@ namespace Mesen.GUI.Debugger
 			mnuStepInto.InitShortcut(this, nameof(DebuggerShortcutsConfig.StepInto));
 			mnuStepOver.InitShortcut(this, nameof(DebuggerShortcutsConfig.StepOver));
 
+			mnuRunCpuCycle.InitShortcut(this, nameof(DebuggerShortcutsConfig.RunCpuCycle));
 			mnuRunPpuCycle.InitShortcut(this, nameof(DebuggerShortcutsConfig.RunPpuCycle));
 			mnuRunScanline.InitShortcut(this, nameof(DebuggerShortcutsConfig.RunPpuScanline));
 			mnuRunOneFrame.InitShortcut(this, nameof(DebuggerShortcutsConfig.RunPpuFrame));
 
+			mnuGoToAll.InitShortcut(this, nameof(DebuggerShortcutsConfig.GoToAll));
 			mnuGoToAddress.InitShortcut(this, nameof(DebuggerShortcutsConfig.GoTo));
 			mnuFind.InitShortcut(this, nameof(DebuggerShortcutsConfig.Find));
 			mnuFindNext.InitShortcut(this, nameof(DebuggerShortcutsConfig.FindNext));
@@ -269,6 +281,13 @@ namespace Mesen.GUI.Debugger
 			mnuScriptWindow.InitShortcut(this, nameof(DebuggerShortcutsConfig.OpenScriptWindow));
 			mnuTraceLogger.InitShortcut(this, nameof(DebuggerShortcutsConfig.OpenTraceLogger));
 			mnuTextHooker.InitShortcut(this, nameof(DebuggerShortcutsConfig.OpenTextHooker));
+			mnuProfiler.InitShortcut(this, nameof(DebuggerShortcutsConfig.OpenProfiler));
+			mnuWatchWindow.InitShortcut(this, nameof(DebuggerShortcutsConfig.OpenWatchWindow));
+
+			mnuOpenNametableViewer.InitShortcut(this, nameof(DebuggerShortcutsConfig.OpenNametableViewer));
+			mnuOpenChrViewer.InitShortcut(this, nameof(DebuggerShortcutsConfig.OpenChrViewer));
+			mnuOpenSpriteViewer.InitShortcut(this, nameof(DebuggerShortcutsConfig.OpenSpriteViewer));
+			mnuOpenPaletteViewer.InitShortcut(this, nameof(DebuggerShortcutsConfig.OpenPaletteViewer));
 		}
 
 		private void InitToolbar()
@@ -278,6 +297,7 @@ namespace Mesen.GUI.Debugger
 				mnuImportLabels, mnuExportLabels, null,
 				mnuContinue, mnuBreak, null,
 				mnuStepInto, mnuStepOver, mnuStepOut, mnuStepBack, null,
+				mnuRunCpuCycle, null,
 				mnuRunPpuCycle, mnuRunScanline, mnuRunOneFrame, null,
 				mnuToggleBreakpoint, mnuDisableEnableBreakpoint, null,
 				mnuFind, mnuFindPrev, mnuFindNext, null,
@@ -292,6 +312,14 @@ namespace Mesen.GUI.Debugger
 
 		protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
 		{
+			if(!((UserControl)LastCodeWindow).ContainsFocus) {
+				//Allow Ctrl+C, etc to work normally while editing watch, or other fields
+				CleanupMenu(mnuCode.DropDownItems);
+				mnuCode.DropDownItems.Clear();
+			} else {
+				UpdateCodeMenu();
+			}
+
 			if(keyData == ConfigManager.Config.DebugInfo.Shortcuts.ToggleBreakContinue) {
 				if(mnuBreak.Enabled) {
 					ctrlConsoleStatus.ApplyChanges();
@@ -309,7 +337,7 @@ namespace Mesen.GUI.Debugger
 		{
 			base.OnActivated(e);
 			if(ConfigManager.Config.DebugInfo.BreakOnDebuggerFocus && !InteropEmu.DebugIsExecutionStopped()) {
-				InteropEmu.DebugStep(1);
+				InteropEmu.DebugStep(1, BreakSource.BreakOnFocus);
 			}
 		}
 
@@ -318,7 +346,7 @@ namespace Mesen.GUI.Debugger
 			int relativeAddress = InteropEmu.DebugGetRelativeAddress((UInt32)sender, AddressType.PrgRom);
 			if(relativeAddress >= 0) {
 				BringToFront();
-				_lastCodeWindow.ScrollToLineNumber(relativeAddress);
+				LastCodeWindow.ScrollToLineNumber(relativeAddress);
 			}
 		}
 
@@ -353,70 +381,6 @@ namespace Mesen.GUI.Debugger
 					}
 				}
 			}
-		}
-
-		private void AutoLoadDbgFiles(bool silent)
-		{
-			ctrlSourceViewer.SymbolProvider = null;
-			ctrlSourceViewerSplit.SymbolProvider = null;
-			ctrlDebuggerCode.SymbolProvider = null;
-			ctrlDebuggerCodeSplit.SymbolProvider = null;
-
-			if(ConfigManager.Config.DebugInfo.AutoLoadDbgFiles) {
-				RomInfo info = InteropEmu.GetRomInfo();
-				string dbgPath = Path.Combine(info.RomFile.Folder, info.GetRomName() + ".dbg");
-				if(File.Exists(dbgPath)) {
-					ImportDbgFile(dbgPath, silent);
-				} else {
-					string mlbPath = Path.Combine(info.RomFile.Folder, info.GetRomName() + ".mlb");
-					if(File.Exists(mlbPath)) {
-						ImportMlbFile(mlbPath, silent);
-					} else {
-						string fnsPath = Path.Combine(info.RomFile.Folder, info.GetRomName() + ".fns");
-						if(File.Exists(fnsPath)) {
-							ImportNesasmFnsFile(fnsPath, silent);
-						}
-					}
-				}
-			}
-
-			if(ctrlSourceViewer.SymbolProvider == null) {
-				ctrlSourceViewer.Visible = false;
-				ctrlSourceViewerSplit.Visible = false;
-				ctrlDebuggerCode.Visible = true;
-				ctrlDebuggerCodeSplit.Visible = true;
-				ctrlDebuggerCode.Focus();
-			}
-		}
-
-		private void ImportNesasmFnsFile(string fnsPath, bool silent = false)
-		{
-			if(ConfigManager.Config.DebugInfo.ImportConfig.ResetLabelsOnImport) {
-				ResetLabels();
-			}
-			NesasmFnsImporter.Import(fnsPath, silent);
-		}
-
-		private void ImportMlbFile(string mlbPath, bool silent = false)
-		{
-			if(ConfigManager.Config.DebugInfo.ImportConfig.ResetLabelsOnImport) {
-				ResetLabels();
-			}
-			MesenLabelFile.Import(mlbPath, silent);
-		}
-
-		private void ImportDbgFile(string dbgPath, bool silent)
-		{
-			if(ConfigManager.Config.DebugInfo.ImportConfig.ResetLabelsOnImport) {
-				ResetLabels();
-			}
-
-			Ld65DbgImporter dbgImporter = new Ld65DbgImporter();
-			dbgImporter.Import(dbgPath, silent);
-			ctrlDebuggerCode.SymbolProvider = dbgImporter;
-			ctrlDebuggerCodeSplit.SymbolProvider = dbgImporter;
-			ctrlSourceViewer.SymbolProvider = dbgImporter;
-			ctrlSourceViewerSplit.SymbolProvider = dbgImporter;
 		}
 
 		private void UpdateWorkspace()
@@ -468,8 +432,50 @@ namespace Mesen.GUI.Debugger
 			SetFlag(DebuggerFlags.BreakOnDecayedOamRead, config.BreakOnDecayedOamRead);
 			SetFlag(DebuggerFlags.BreakOnInit, config.BreakOnInit);
 			SetFlag(DebuggerFlags.BreakOnPlay, config.BreakOnPlay);
+			SetFlag(DebuggerFlags.BreakOnFirstCycle, config.BreakOnFirstCycle);
 			SetFlag(DebuggerFlags.HidePauseIcon, config.HidePauseIcon);
 			InteropEmu.SetFlag(EmulationFlags.DebuggerWindowEnabled, true);
+		}
+
+		private string GetBreakNotification(Int64 param)
+		{
+			BreakSource source = (BreakSource)(byte)param;
+
+			string message = null;
+			if(ConfigManager.Config.DebugInfo.ShowBreakNotifications) {
+				message = ResourceHelper.GetEnumText(source);
+				if(source == BreakSource.Breakpoint) {
+					int breakpointId = (int)(param >> 40);
+					byte bpValue = (byte)((param >> 32) & 0xFF);
+					BreakpointType bpType = (BreakpointType)(byte)((param >> 8) & 0x0F);
+					UInt16 bpAddress = (UInt16)(param >> 16);
+
+					ReadOnlyCollection<Breakpoint> breakpoints = BreakpointManager.Breakpoints;
+					if(breakpointId >= 0 && breakpointId < breakpoints.Count) {
+						Breakpoint bp = breakpoints[breakpointId];
+						if(bpType != BreakpointType.Global) {
+							message += ": " + ResourceHelper.GetEnumText(bpType) + " ($" + bpAddress.ToString("X4") + ":$" + bpValue.ToString("X2") + ")";
+						}
+						if(!string.IsNullOrWhiteSpace(bp.Condition)) {
+							string cond = bp.Condition.Trim();
+							if(cond.Length > 27) {
+								message += Environment.NewLine + cond.Substring(0, 24) + "...";
+							} else {
+								message += Environment.NewLine + cond;
+							}
+						}
+					}
+				} else if(source == BreakSource.BreakOnUninitMemoryRead) {
+					UInt16 address = (UInt16)(param >> 16);
+					byte value = (byte)((param >> 32) & 0xFF);
+					message += " ($" + address.ToString("X4") + ":$" + value.ToString("X2") + ")";
+				} else if(source == BreakSource.CpuStep || source == BreakSource.PpuStep) {
+					//Don't display anything when breaking due to stepping
+					message = null;
+				}
+			}
+
+			return message;
 		}
 
 		private void _notifListener_OnNotification(InteropEmu.NotificationEventArgs e)
@@ -494,13 +500,19 @@ namespace Mesen.GUI.Debugger
 					break;
 
 				case InteropEmu.ConsoleNotificationType.CodeBreak:
+					this._executionIsStopped = true;
+
 					this.BeginInvoke((MethodInvoker)(() => {
-						BreakSource source = (BreakSource)e.Parameter.ToInt32();
+						BreakSource source = (BreakSource)(byte)e.Parameter.ToInt64();
+						
 						bool bringToFront = (
-							source == BreakSource.Break && ConfigManager.Config.DebugInfo.BringToFrontOnBreak ||
+							source < BreakSource.Pause && ConfigManager.Config.DebugInfo.BringToFrontOnBreak ||
 							source == BreakSource.Pause && ConfigManager.Config.DebugInfo.BringToFrontOnPause
 						);
 						UpdateDebugger(true, bringToFront);
+
+						_lastCodeWindow.SetMessage(new TextboxMessageInfo() { Message = GetBreakNotification(e.Parameter.ToInt64()) });
+
 						mnuContinue.Enabled = true;
 						mnuBreak.Enabled = false;
 					}));
@@ -510,22 +522,23 @@ namespace Mesen.GUI.Debugger
 				case InteropEmu.ConsoleNotificationType.GameReset:
 				case InteropEmu.ConsoleNotificationType.GameLoaded:
 					UpdateDebuggerFlags();
+					BreakpointManager.SetBreakpoints();
 
 					bool breakOnReset = ConfigManager.Config.DebugInfo.BreakOnReset && !InteropEmu.IsNsf();
 					this.BeginInvoke((MethodInvoker)(() => {
 						this.UpdateWorkspace();
+						LabelManager.RefreshLabels();
 						this.AutoLoadCdlFiles();
-						this.AutoLoadDbgFiles(true);
+						DebugWorkspaceManager.AutoLoadDbgFiles(true);
 						UpdateDebugger(true, false);
-						BreakpointManager.SetBreakpoints();
 
 						if(!breakOnReset) {
 							ClearActiveStatement();
 						}
 					}));
 
-					if(breakOnReset) {
-						InteropEmu.DebugStep(1);
+					if(breakOnReset || _executionIsStopped) {
+						InteropEmu.DebugStep(1, BreakSource.BreakOnReset);
 					}
 					break;
 			}
@@ -606,15 +619,15 @@ namespace Mesen.GUI.Debugger
 			_previousCycle = state.CPU.CycleCount;
 
 			if(UpdateSplitView()) {
-				if(newCode != null || ctrlDebuggerCodeSplit.Code == null) {
+				if(ctrlDebuggerCodeSplit.Code != ctrlDebuggerCode.Code) {
 					ctrlDebuggerCodeSplit.Code = ctrlDebuggerCode.Code;
 				}
 			} else {
-				_lastCodeWindow = ctrlSourceViewer.Visible ? (ICodeViewer)ctrlSourceViewer : (ICodeViewer)ctrlDebuggerCode;
+				LastCodeWindow = ctrlSourceViewer.Visible ? (ICodeViewer)ctrlSourceViewer : (ICodeViewer)ctrlDebuggerCode;
 			}
 
 			if(updateActiveAddress) {
-				_lastCodeWindow.SelectActiveAddress(state.CPU.DebugPC);
+				LastCodeWindow.SelectActiveAddress(state.CPU.DebugPC);
 			}
 
 			ctrlDebuggerCode.SetActiveAddress(state.CPU.DebugPC);
@@ -645,6 +658,14 @@ namespace Mesen.GUI.Debugger
 					ResumeExecution();
 				}
 				_firstBreak = false;
+
+				//Switch to source viewer after reopening debugger if we were in source viewer when we closed it
+				if(ctrlSourceViewer.CurrentFile != null && ConfigManager.Config.DebugInfo.LeftView.UsingSourceView) {
+					ctrlDebuggerCode_OnSwitchView(this.ctrlDebuggerCode);
+				}
+				if(ctrlSourceViewerSplit.CurrentFile != null && ConfigManager.Config.DebugInfo.RightView.UsingSourceView) {
+					ctrlDebuggerCode_OnSwitchView(this.ctrlDebuggerCodeSplit);
+				}
 			}
 		}
 
@@ -657,6 +678,11 @@ namespace Mesen.GUI.Debugger
 
 			ctrlSourceViewer.ClearActiveAddress();
 			ctrlSourceViewerSplit.ClearActiveAddress();
+
+			ctrlDebuggerCode.SetMessage(null);
+			ctrlDebuggerCodeSplit.SetMessage(null);
+			ctrlSourceViewer.SetMessage(null);
+			ctrlSourceViewerSplit.SetMessage(null);
 		}
 
 		public void TogglePause()
@@ -671,11 +697,12 @@ namespace Mesen.GUI.Debugger
 
 		private void ToggleBreakpoint(bool toggleEnabled)
 		{
-			_lastCodeWindow.CodeViewerActions.ToggleBreakpoint(toggleEnabled);
+			LastCodeWindow.CodeViewerActions.ToggleBreakpoint(toggleEnabled);
 		}
 		
 		private void ResumeExecution()
 		{
+			_executionIsStopped = false;
 			mnuContinue.Enabled = false;
 			mnuBreak.Enabled = true;
 
@@ -730,6 +757,12 @@ namespace Mesen.GUI.Debugger
 			InteropEmu.DebugStepBack();
 		}
 
+		private void mnuRunCpuCycle_Click(object sender, EventArgs e)
+		{
+			ctrlConsoleStatus.ApplyChanges();
+			InteropEmu.DebugStepCycles(1);
+		}
+
 		private void mnuRunPpuCycle_Click(object sender, EventArgs e)
 		{
 			ctrlConsoleStatus.ApplyChanges();
@@ -750,8 +783,13 @@ namespace Mesen.GUI.Debugger
 			int cycleCount = ((model == NesModel.NTSC ? 262 : 312) + extraScanlines) * 341;
 			InteropEmu.DebugPpuStep((UInt32)cycleCount);
 		}
-		
-		private void ctrlDebuggerCode_OnShowInSplitView(ICodeViewer sender, AddressEventArgs args)
+
+		private void ctrlDebuggerCode_OnGoToDestination(ICodeViewer sender, GoToDestination dest)
+		{
+			GoToDestination(sender, dest);
+		}
+
+		private void ctrlDebuggerCode_OnShowInSplitView(ICodeViewer sender, GoToDestination dest)
 		{
 			if(!ConfigManager.Config.DebugInfo.SplitView) {
 				mnuSplitView.Checked = true;
@@ -760,18 +798,17 @@ namespace Mesen.GUI.Debugger
 				UpdateDebugger(false);
 			}
 
-			UInt16 addr = (UInt16)args.Address;
 			if(sender == ctrlDebuggerCode || sender == ctrlSourceViewer) {
 				if(ctrlSourceViewerSplit.Visible) {
-					ctrlSourceViewerSplit.ScrollToLineNumber(addr);
+					GoToDestination(ctrlSourceViewerSplit, dest);
 				} else {
-					ctrlDebuggerCodeSplit.ScrollToLineNumber(addr);
+					GoToDestination(ctrlDebuggerCodeSplit, dest);
 				}
 			} else {
 				if(ctrlSourceViewer.Visible) {
-					ctrlSourceViewer.ScrollToLineNumber(addr);
+					GoToDestination(ctrlSourceViewer, dest);
 				} else {
-					ctrlDebuggerCode.ScrollToLineNumber(addr);
+					GoToDestination(ctrlDebuggerCode, dest);
 				}
 			}
 		}
@@ -830,17 +867,17 @@ namespace Mesen.GUI.Debugger
 
 		private void mnuFind_Click(object sender, EventArgs e)
 		{
-			_lastCodeWindow.CodeViewer.OpenSearchBox();
+			LastCodeWindow.CodeViewer.OpenSearchBox();
 		}
 		
 		private void mnuFindNext_Click(object sender, EventArgs e)
 		{
-			_lastCodeWindow.CodeViewer.FindNext();
+			LastCodeWindow.CodeViewer.FindNext();
 		}
 
 		private void mnuFindPrev_Click(object sender, EventArgs e)
 		{
-			_lastCodeWindow.CodeViewer.FindPrevious();
+			LastCodeWindow.CodeViewer.FindPrevious();
 		}
 
 		private void mnuSplitView_Click(object sender, EventArgs e)
@@ -873,55 +910,60 @@ namespace Mesen.GUI.Debugger
 
 		public void ScrollToAddress(int address)
 		{
-			_lastCodeWindow.ScrollToLineNumber(address);
+			LastCodeWindow.ScrollToLineNumber(address);
+			if(WindowState == FormWindowState.Minimized) {
+				//Unminimize window if it was minimized
+				WindowState = FormWindowState.Normal;
+			}
+			BringToFront();
 		}
 
 		private void ctrlDebuggerCode_Enter(object sender, EventArgs e)
 		{
-			_lastCodeWindow = (ICodeViewer)sender;
+			LastCodeWindow = (ICodeViewer)sender;
 		}
 
 		private void mnuGoToAddress_Click(object sender, EventArgs e)
 		{
-			_lastCodeWindow.CodeViewer.GoToAddress();
+			LastCodeWindow.CodeViewer.GoToAddress();
 		}
 
 		private void mnuGoToIrqHandler_Click(object sender, EventArgs e)
 		{
 			int address = (InteropEmu.DebugGetMemoryValue(DebugMemoryType.CpuMemory, 0xFFFF) << 8) | InteropEmu.DebugGetMemoryValue(DebugMemoryType.CpuMemory, 0xFFFE);
-			_lastCodeWindow.ScrollToLineNumber(address);
+			LastCodeWindow.ScrollToLineNumber(address);
 		}
 
 		private void mnuGoToNmiHandler_Click(object sender, EventArgs e)
 		{
 			int address = (InteropEmu.DebugGetMemoryValue(DebugMemoryType.CpuMemory, 0xFFFB) << 8) | InteropEmu.DebugGetMemoryValue(DebugMemoryType.CpuMemory, 0xFFFA);
-			_lastCodeWindow.ScrollToLineNumber(address);
+			LastCodeWindow.ScrollToLineNumber(address);
 		}
 
 		private void mnuGoToResetHandler_Click(object sender, EventArgs e)
 		{
 			int address = (InteropEmu.DebugGetMemoryValue(DebugMemoryType.CpuMemory, 0xFFFD) << 8) | InteropEmu.DebugGetMemoryValue(DebugMemoryType.CpuMemory, 0xFFFC);
-			_lastCodeWindow.ScrollToLineNumber(address);
+			LastCodeWindow.ScrollToLineNumber(address);
 		}
 		
 		private void mnuGoToProgramCount_Click(object sender, EventArgs e)
 		{
-			_lastCodeWindow.CodeViewerActions.ScrollToActiveAddress();
+			LastCodeWindow.CodeViewerActions.ScrollToActiveAddress();
 		}
 
 		private void mnuIncreaseFontSize_Click(object sender, EventArgs e)
 		{
-			_lastCodeWindow.CodeViewer.TextZoom += 10;
+			LastCodeWindow.CodeViewer.TextZoom += 10;
 		}
 
 		private void mnuDecreaseFontSize_Click(object sender, EventArgs e)
 		{
-			_lastCodeWindow.CodeViewer.TextZoom -= 10;
+			LastCodeWindow.CodeViewer.TextZoom -= 10;
 		}
 
 		private void mnuResetFontSize_Click(object sender, EventArgs e)
 		{
-			_lastCodeWindow.CodeViewer.TextZoom = 100;
+			LastCodeWindow.CodeViewer.TextZoom = 100;
 		}
 
 		private void mnuClose_Click(object sender, EventArgs e)
@@ -957,6 +999,10 @@ namespace Mesen.GUI.Debugger
 			ConfigManager.Config.DebugInfo.WindowHeight = this.WindowState != FormWindowState.Normal ? this.RestoreBounds.Height : this.Height;
 			ConfigManager.Config.DebugInfo.TopPanelHeight = this.splitContainer.GetSplitterDistance();
 			ConfigManager.Config.DebugInfo.LeftPanelWidth = this.ctrlSplitContainerTop.GetSplitterDistance();
+
+			ConfigManager.Config.DebugInfo.LeftView.UsingSourceView = this.ctrlSourceViewer.Visible;
+			ConfigManager.Config.DebugInfo.RightView.UsingSourceView = this.ctrlSourceViewerSplit.Visible;
+
 			ConfigManager.ApplyChanges();
 
 			DebugWorkspaceManager.SaveWorkspace();
@@ -974,7 +1020,7 @@ namespace Mesen.GUI.Debugger
 
 		private void ctrlCallstack_FunctionSelected(object sender, EventArgs e)
 		{
-			_lastCodeWindow.ScrollToLineNumber((int)sender);
+			LastCodeWindow.ScrollToLineNumber((int)sender);
 		}
 
 		private void ctrlConsoleStatus_OnStateChanged(object sender, EventArgs e)
@@ -1017,7 +1063,7 @@ namespace Mesen.GUI.Debugger
 			if(bp.IsCpuBreakpoint) {
 				int relAddress = bp.GetRelativeAddress();
 				if(relAddress >= 0) {
-					_lastCodeWindow.ScrollToLineNumber(relAddress);
+					LastCodeWindow.ScrollToLineNumber(relAddress);
 				}
 			}
 		}
@@ -1120,6 +1166,13 @@ namespace Mesen.GUI.Debugger
 			ConfigManager.Config.DebugInfo.OnlyShowTooltipsOnShift = mnuOnlyShowTooltipOnShift.Checked;
 			ConfigManager.ApplyChanges();
 		}
+		
+		private void mnuBreakOnFirstCycle_Click(object sender, EventArgs e)
+		{
+			ConfigManager.Config.DebugInfo.BreakOnFirstCycle = !mnuEnableSubInstructionBreakpoints.Checked;
+			ConfigManager.ApplyChanges();
+			UpdateDebuggerFlags();
+		}
 
 		private void mnuBreakOnReset_Click(object sender, EventArgs e)
 		{
@@ -1199,6 +1252,28 @@ namespace Mesen.GUI.Debugger
 			ConfigManager.Config.DebugInfo.BringToFrontOnBreak = mnuBringToFrontOnBreak.Checked;
 			ConfigManager.ApplyChanges();
 		}
+		
+		private void mnuShowBreakNotifications_Click(object sender, EventArgs e)
+		{
+			ConfigManager.Config.DebugInfo.ShowBreakNotifications = mnuShowBreakNotifications.Checked;
+			ConfigManager.ApplyChanges();
+		}
+
+		private void mnuShowInstructionProgression_Click(object sender, EventArgs e)
+		{
+			ConfigManager.Config.DebugInfo.ShowInstructionProgression = mnuShowInstructionProgression.Checked;
+			ConfigManager.ApplyChanges();
+			
+			UpdateDebugger(false, false);
+		}
+
+		private void mnuShowSelectionLength_Click(object sender, EventArgs e)
+		{
+			ConfigManager.Config.DebugInfo.ShowSelectionLength = mnuShowSelectionLength.Checked;
+			ConfigManager.ApplyChanges();
+
+			UpdateDebugger(false, false);
+		}
 
 		private void mnuAlwaysScrollToCenter_Click(object sender, EventArgs e)
 		{
@@ -1235,9 +1310,14 @@ namespace Mesen.GUI.Debugger
 			this.UpdateDebugger(false);
 		}
 
-		private void ctrlFunctionList_OnFunctionSelected(object relativeAddress, EventArgs e)
+		private void ctrlFunctionList_OnFunctionSelected(GoToDestination dest)
 		{
-			_lastCodeWindow.ScrollToLineNumber((Int32)relativeAddress);
+			GoToDestination(LastCodeWindow, dest);
+		}
+
+		private void ctrlLabelList_OnLabelSelected(GoToDestination dest)
+		{
+			GoToDestination(LastCodeWindow, dest);
 		}
 
 		private void LabelManager_OnLabelUpdated(object sender, EventArgs e)
@@ -1246,11 +1326,6 @@ namespace Mesen.GUI.Debugger
 			ctrlLabelList.UpdateLabelList();
 			ctrlFunctionList.UpdateFunctionList(true);
 			UpdateDebugger(false, false);
-		}
-
-		private void ctrlLabelList_OnLabelSelected(object relativeAddress, EventArgs e)
-		{
-			_lastCodeWindow.ScrollToLineNumber((Int32)relativeAddress);
 		}
 
 		private void mnuResetWorkspace_Click(object sender, EventArgs e)
@@ -1262,19 +1337,11 @@ namespace Mesen.GUI.Debugger
 			}
 		}
 
-		private void ResetLabels()
-		{
-			LabelManager.ResetLabels();
-			if(!ConfigManager.Config.DebugInfo.DisableDefaultLabels) {
-				LabelManager.SetDefaultLabels(InteropEmu.GetRomInfo().MapperId);
-			}
-			UpdateWorkspace();
-		}
-
 		private void mnuResetLabels_Click(object sender, EventArgs e)
 		{
 			if(MessageBox.Show("This operation will reset labels to their default state." + Environment.NewLine + "Are you sure?", "", MessageBoxButtons.OKCancel, MessageBoxIcon.Warning) == DialogResult.OK) {
-				ResetLabels();
+				DebugWorkspaceManager.ResetLabels();
+				UpdateWorkspace();
 				UpdateDebugger(false);
 			}
 		}
@@ -1283,11 +1350,11 @@ namespace Mesen.GUI.Debugger
 		{
 			string ext = Path.GetExtension(path).ToLower();
 			if(ext == ".mlb") {
-				ImportMlbFile(path);
+				DebugWorkspaceManager.ImportMlbFile(path);
 			} else if(ext == ".fns") {
-				ImportNesasmFnsFile(path);
+				DebugWorkspaceManager.ImportNesasmFnsFile(path);
 			} else {
-				ImportDbgFile(path, false);
+				DebugWorkspaceManager.ImportDbgFile(path, false);
 			}
 		}
 
@@ -1312,12 +1379,12 @@ namespace Mesen.GUI.Debugger
 		private void ctrlLabelList_OnFindOccurrence(object sender, EventArgs e)
 		{
 			CodeLabel label = sender as CodeLabel;
-			_lastCodeWindow.FindAllOccurrences(label.Label, true, true);
+			LastCodeWindow.FindAllOccurrences(label.Label, true, true);
 		}
 
 		private void ctrlFunctionList_OnFindOccurrence(object sender, EventArgs e)
 		{
-			_lastCodeWindow.FindAllOccurrences(sender as string, true, true);
+			LastCodeWindow.FindAllOccurrences(sender as string, true, true);
 		}
 
 		private void mnuBreakIn_Click(object sender, EventArgs e)
@@ -1338,7 +1405,7 @@ namespace Mesen.GUI.Debugger
 		{
 			frmFindOccurrences frm = new Debugger.frmFindOccurrences();
 			if(frm.ShowDialog() == DialogResult.OK) {
-				_lastCodeWindow.FindAllOccurrences(frm.SearchString, frm.MatchWholeWord, frm.MatchCase);
+				LastCodeWindow.FindAllOccurrences(frm.SearchString, frm.MatchWholeWord, frm.MatchCase);
 			}
 		}
 
@@ -1347,7 +1414,7 @@ namespace Mesen.GUI.Debugger
 			if(_debuggerInitialized) {
 				ConfigManager.Config.DebugInfo.AutoLoadDbgFiles = mnuAutoLoadDbgFiles.Checked;
 				ConfigManager.ApplyChanges();
-				AutoLoadDbgFiles(false);
+				DebugWorkspaceManager.AutoLoadDbgFiles(false);
 			}
 		}
 
@@ -1362,7 +1429,7 @@ namespace Mesen.GUI.Debugger
 
 		private void ctrlConsoleStatus_OnGotoLocation(object sender, EventArgs e)
 		{
-			_lastCodeWindow.ScrollToLineNumber((int)sender);
+			LastCodeWindow.ScrollToLineNumber((int)sender);
 		}
 
 		private void UpdateDisassembleFlags()
@@ -1501,6 +1568,11 @@ namespace Mesen.GUI.Debugger
 			DebugWindowManager.OpenDebugWindow(DebugWindow.ScriptWindow);
 		}
 
+		private void mnuProfiler_Click(object sender, EventArgs e)
+		{
+			DebugWindowManager.OpenDebugWindow(DebugWindow.Profiler);
+		}
+
 		private void mnuAssembler_Click(object sender, EventArgs e)
 		{
 			DebugWindowManager.OpenDebugWindow(DebugWindow.Assembler);
@@ -1511,24 +1583,66 @@ namespace Mesen.GUI.Debugger
 			DebugWindowManager.OpenAssembler(args.Code, args.StartAddress, args.BlockLength);
 		}
 
-		private void mnuCode_DropDownOpening(object sender, EventArgs e)
+		private void CopyMenu(ToolStripItemCollection source, ToolStripItemCollection dest)
 		{
-			this._lastCodeWindow.CodeViewerActions.UpdateContextMenuItemVisibility(false);
-
 			List<ToolStripItem> items = new List<ToolStripItem>();
-			foreach(ToolStripItem item in this._lastCodeWindow.CodeViewerActions.contextMenu.Items) {
-				items.Add(item);
+			foreach(ToolStripItem item in source) {
+				if(item is ToolStripSeparator) {
+					ToolStripSeparator sep = new ToolStripSeparator();
+					sep.Name = item.Name;
+					sep.Visible = true;
+					items.Add(sep);
+				} else if(item is ToolStripMenuItem) {
+					ToolStripMenuItem copy = new ToolStripMenuItem(item.Text, item.Image);
+					copy.Name = item.Name;
+					copy.Enabled = item.Enabled;
+					copy.CheckOnClick = ((ToolStripMenuItem)item).CheckOnClick;
+					copy.Checked = ((ToolStripMenuItem)item).Checked;
+					copy.Visible = true;
+					copy.Click += (s, e) => {
+						item.PerformClick();
+					};
+
+					if(((ToolStripMenuItem)item).DropDownItems.Count > 0) {
+						CopyMenu(((ToolStripMenuItem)item).DropDownItems, copy.DropDownItems);
+					}
+
+					if(item.Tag is ShortcutInfo) {
+						copy.InitShortcut(this, ((ShortcutInfo)item.Tag).ShortcutKey);
+					}
+
+					items.Add(copy);
+				} else {
+					//Not used
+				}
 			}
-			mnuCode.DropDownItems.AddRange(items.ToArray());
+			dest.AddRange(items.ToArray());
 		}
 
-		private void mnuCode_DropDownClosed(object sender, EventArgs e)
+		private void CleanupMenu(ToolStripItemCollection items)
 		{
-			List<ToolStripItem> items = new List<ToolStripItem>();
-			foreach(ToolStripItem item in mnuCode.DropDownItems) {
-				items.Add(item);
+			foreach(ToolStripItem item in items) {
+				if(item.Tag is ShortcutInfo && ((ShortcutInfo)item.Tag).KeyHandler != null) {
+					DebuggerShortcutsConfig.ClearProcessCmdKeyHandler((ToolStripMenuItem)item, this);
+				}
+
+				if(item is ToolStripMenuItem && ((ToolStripMenuItem)item).HasDropDownItems) {
+					CleanupMenu(((ToolStripMenuItem)item).DropDownItems);
+				}
 			}
-			this._lastCodeWindow.CodeViewerActions.contextMenu.Items.AddRange(items.ToArray());
+		}
+
+		private void UpdateCodeMenu()
+		{
+			CleanupMenu(mnuCode.DropDownItems);
+			mnuCode.DropDownItems.Clear();
+			CopyMenu(this.LastCodeWindow.CodeViewerActions.contextMenu.Items, mnuCode.DropDownItems);
+			this.LastCodeWindow.CodeViewerActions.UpdateContextMenuItemVisibility(mnuCode.DropDownItems);
+		}
+		
+		private void mnuCode_DropDownOpening(object sender, EventArgs e)
+		{
+			UpdateCodeMenu();
 		}
 
 		private void mnuCdlStripUsedData_Click(object sender, EventArgs e)
@@ -1666,6 +1780,116 @@ namespace Mesen.GUI.Debugger
 			} catch(Exception ex) {
 				MesenMsgBox.Show("UnexpectedError", MessageBoxButtons.OK, MessageBoxIcon.Error, ex.ToString());
 			}
+		}
+
+		private ICodeViewer GetAlternateView(ICodeViewer viewer)
+		{
+			if(viewer == ctrlDebuggerCode) {
+				return ctrlSourceViewer;
+			} else if(viewer == ctrlSourceViewer) {
+				return ctrlDebuggerCode;
+			} else if(viewer == ctrlDebuggerCodeSplit) {
+				return ctrlSourceViewerSplit;
+			} else if(viewer == ctrlSourceViewerSplit) {
+				return ctrlDebuggerCodeSplit;
+			}
+			return null;
+		}
+
+		private void GoToDestination(ICodeViewer target, GoToDestination dest)
+		{
+			if(target is ctrlSourceViewer && !string.IsNullOrWhiteSpace(dest.File)) {
+				((ctrlSourceViewer)target).ScrollToFileLine(dest.File, dest.Line);
+			} else if(dest.CpuAddress >= 0) {
+				target.ScrollToLineNumber(dest.CpuAddress);
+			} else if(!string.IsNullOrWhiteSpace(dest.File)) {
+				if(!(target is ctrlSourceViewer)) {
+					ctrlDebuggerCode_OnSwitchView(target);
+					target = GetAlternateView(target);
+				}
+				if(target is ctrlSourceViewer) {
+					((ctrlSourceViewer)target).ScrollToFileLine(dest.File, dest.Line);
+				}
+			} else {
+				AddressTypeInfo addressInfo = dest.AddressInfo;
+				if(addressInfo == null && dest.Label != null) {
+					addressInfo = new AddressTypeInfo() { Address = (int)dest.Label.Address, Type = dest.Label.AddressType };
+				}
+
+				if(InteropEmu.DebugGetRelativeAddress((uint)addressInfo.Address, addressInfo.Type) < 0) {
+					//Try to display the label in the source view if possible (when code is out of scope)
+					if(ctrlSourceViewer.CurrentFile != null && !(target is ctrlSourceViewer)) {
+						ctrlDebuggerCode_OnSwitchView(target);
+						target = GetAlternateView(target);
+					}
+				}
+				target.ScrollToAddress(addressInfo);
+			}
+
+			if(WindowState == FormWindowState.Minimized) {
+				//Unminimize window if it was minimized
+				WindowState = FormWindowState.Normal;
+			}
+			BringToFront();
+		}
+
+		public void GoToDestination(GoToDestination dest)
+		{
+			GoToDestination(LastCodeWindow, dest);
+		}
+
+		private void mnuGoToAll_Click(object sender, EventArgs e)
+		{
+			using(frmGoToAll frm = new frmGoToAll(false, true)) {
+				if(frm.ShowDialog() == DialogResult.OK) {
+					GoToDestination(_lastCodeWindow, frm.Destination);
+
+					if(Program.IsMono) {
+						//Delay by 150ms before giving focus when running on Mono
+						//Otherwise this doesn't work (presumably because Mono sets the debugger form to disabled while the popup is opened)
+						Task.Run(() => {
+							System.Threading.Thread.Sleep(150);
+							this.BeginInvoke((Action)(() => {
+								_lastCodeWindow.CodeViewer.Focus();
+							}));
+						});
+					} else {
+						_lastCodeWindow.CodeViewer.Focus();
+					}
+				}
+			}
+		}
+
+		private void mnuConfigureExternalEditor_Click(object sender, EventArgs e)
+		{
+			using(frmExternalEditorConfig frm = new frmExternalEditorConfig()) {
+				frm.ShowDialog(mnuConfigureExternalEditor, this);
+			}
+		}
+
+		private void mnuOpenChrViewer_Click(object sender, EventArgs e)
+		{
+			DebugWindowManager.OpenPpuViewer(PpuViewerMode.ChrViewer);
+		}
+
+		private void mnuOpenNametableViewer_Click(object sender, EventArgs e)
+		{
+			DebugWindowManager.OpenPpuViewer(PpuViewerMode.NametableViewer);
+		}
+
+		private void mnuOpenSpriteViewer_Click(object sender, EventArgs e)
+		{
+			DebugWindowManager.OpenPpuViewer(PpuViewerMode.SpriteViewer);
+		}
+
+		private void mnuOpenPaletteViewer_Click(object sender, EventArgs e)
+		{
+			DebugWindowManager.OpenPpuViewer(PpuViewerMode.PaletteViewer);
+		}
+
+		private void mnuWatchWindow_Click(object sender, EventArgs e)
+		{
+			DebugWindowManager.OpenDebugWindow(DebugWindow.WatchWindow);
 		}
 	}
 }

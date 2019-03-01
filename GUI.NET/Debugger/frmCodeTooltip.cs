@@ -20,14 +20,16 @@ namespace Mesen.GUI.Debugger
 		private AddressTypeInfo _previewAddress;
 		private CodeInfo _code;
 		private Ld65DbgImporter _symbolProvider;
+		private int _showOnLeftOffset;
 
 		protected override bool ShowWithoutActivation
 		{
 			get { return true; }
 		}
 
-		public frmCodeTooltip(Form parent, Dictionary<string, string> values, AddressTypeInfo previewAddress = null, CodeInfo code = null, Ld65DbgImporter symbolProvider = null)
+		public frmCodeTooltip(Form parent, Dictionary<string, string> values, AddressTypeInfo previewAddress = null, CodeInfo code = null, Ld65DbgImporter symbolProvider = null, int showOnLeftOffset = 0)
 		{
+			_showOnLeftOffset = showOnLeftOffset;
 			_parentForm = parent;
 			_values = values;
 			_previewAddress = previewAddress;
@@ -42,31 +44,37 @@ namespace Mesen.GUI.Debugger
 		protected override void OnLoad(EventArgs e)
 		{
 			tlpMain.SuspendLayout();
+
+			TableLayoutPanel tlpLabels = new TableLayoutPanel();
+			tlpLabels.SuspendLayout();
+			tlpLabels.AutoSize = true;
+			tlpMain.Controls.Add(tlpLabels, 0, 0);
 			int i = 0;
+			int maxLabelWidth = (_parentForm.ClientSize.Width - this.Location.X - 150);
 			foreach(KeyValuePair<string, string> kvp in _values) {
-				tlpMain.RowStyles.Insert(1, new RowStyle());
+				tlpLabels.RowStyles.Add(new RowStyle());
 				Label lbl = new Label();
 				lbl.Margin = new Padding(2, 3, 2, 2);
 				lbl.Text = kvp.Key + ":";
 				lbl.Font = new Font(lbl.Font, FontStyle.Bold);
 				lbl.AutoSize = true;
-				tlpMain.SetRow(lbl, i);
-				tlpMain.SetColumn(lbl, 0);
-				tlpMain.Controls.Add(lbl);
+				tlpLabels.Controls.Add(lbl, 0, i);
 
-				lbl = new Label();
+				lbl = new ctrlAutoGrowLabel();
 				lbl.Font = new Font(BaseControl.MonospaceFontFamily, 10);
 				lbl.Margin = new Padding(2);
-				lbl.AutoSize = true;
 				lbl.Text = kvp.Value;
-				tlpMain.SetRow(lbl, i);
-				tlpMain.SetColumn(lbl, 1);
-				tlpMain.Controls.Add(lbl);
+				if(_showOnLeftOffset == 0) {
+					lbl.Size = new Size(maxLabelWidth, 10);
+				} else {
+					lbl.Size = new Size(500, 10);
+				}
+				tlpLabels.Controls.Add(lbl, 1, i);
 
 				i++;
 			}
 
-			if(_previewAddress != null && ConfigManager.Config.DebugInfo.ShowCodePreview) {
+			if((_code != null || _symbolProvider != null) && _previewAddress != null && ConfigManager.Config.DebugInfo.ShowCodePreview) {
 				tlpMain.RowStyles.Insert(1, new RowStyle());
 
 				if(_code != null) {
@@ -86,17 +94,27 @@ namespace Mesen.GUI.Debugger
 
 				Control control = _codeViewer as Control;
 				control.Dock = DockStyle.Fill;
-				tlpMain.SetRow(control, i);
-				tlpMain.SetColumn(control, 0);
-				tlpMain.SetColumnSpan(control, 2);
-				tlpMain.Controls.Add(control);
+				tlpMain.Controls.Add(control, 0, 1);
 			}
+			tlpLabels.ResumeLayout();
 			tlpMain.ResumeLayout();
-			this.Width = this.tlpMain.Width;
-			this.Height = this.tlpMain.Height; 
-			this.BringToFront();
 
 			base.OnLoad(e);
+
+			this.Width = this.tlpMain.Width;
+			if(this.Location.X + this.Width > _parentForm.ClientSize.Width) {
+				if(_showOnLeftOffset > 0) {
+					this.Left -= this.Width + _showOnLeftOffset * 2;
+				} else {
+					int maxWidth = Math.Max(10, _parentForm.ClientSize.Width - this.Location.X - 10);
+					this.tlpMain.MaximumSize = new Size(maxWidth, _parentForm.ClientSize.Height - 10);
+					this.MaximumSize = new Size(maxWidth, _parentForm.ClientSize.Height - 10);
+				}
+			}
+			this.Height = this.tlpMain.Height;
+			this.BringToFront();
+
+			panel.BackColor = ThemeHelper.IsDark ? ThemeHelper.Theme.FormBgColor : SystemColors.Info;
 		}
 	}
 }
