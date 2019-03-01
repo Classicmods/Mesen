@@ -30,6 +30,8 @@ namespace Mesen.GUI.Debugger
 		public frmScript(bool forceBlank = false)
 		{
 			InitializeComponent();
+			ThemeHelper.ExcludeFromTheme(txtScriptContent);
+			txtScriptContent.ForeColor = Color.Black;
 
 			DebugInfo.ApplyConfig();
 
@@ -224,10 +226,10 @@ namespace Mesen.GUI.Debugger
 			txtScriptContent.ClearUndo();
 		}
 
-		public void LoadScriptFile(string filepath, bool runScript = true)
+		public void LoadScriptFile(string filepath, bool runScript = true, bool disableSavePrompt = false)
 		{
 			if(File.Exists(filepath)) {
-				if(!SavePrompt()) {
+				if(!disableSavePrompt && !SavePrompt()) {
 					return;
 				}
 				string content = File.ReadAllText(filepath);
@@ -366,6 +368,7 @@ namespace Mesen.GUI.Debugger
 
 		private void tmrLog_Tick(object sender, EventArgs e)
 		{
+			tmrLog.Stop();
 			if(_scriptId >= 0) {
 				string newLog = InteropEmu.DebugGetScriptLog(_scriptId);
 				if(txtLog.Text != newLog) {
@@ -381,9 +384,18 @@ namespace Mesen.GUI.Debugger
 
 			if(_filePath != null && File.Exists(_filePath) && mnuAutoReload.Checked) {
 				if(_lastTimestamp < File.GetLastWriteTime(_filePath)) {
-					LoadScriptFile(_filePath);
+					if(_originalText != txtScriptContent.Text) {
+						DialogResult result = MessageBox.Show("You have unsaved changes for this script and the file has been modified by another process - would you like to discard the changes and reload the script from the disk?", "Script Window", MessageBoxButtons.YesNo);
+						if(result == DialogResult.Yes) {
+							LoadScriptFile(_filePath, true, true);
+						}
+					} else {
+						LoadScriptFile(_filePath, true, true);
+					}
+					_lastTimestamp = File.GetLastWriteTime(_filePath);
 				}
 			}
+			tmrLog.Start();
 		}
 
 		private void mnuView_DropDownOpening(object sender, EventArgs e)
@@ -505,6 +517,7 @@ namespace Mesen.GUI.Debugger
 			new List<string> {"func","emu.reset","emu.reset()","","","Resets the current game."},
 			new List<string> {"func","emu.resume","emu.resume()","","","Resumes execution after breaking."},
 			new List<string> {"func","emu.rewind","emu.rewind(seconds)","seconds - *Integer* The number of seconds to rewind","","Instantly rewinds the emulation by the number of seconds specified.\n Note: this can only be called from within a 'StartFrame' event callback."},
+			new List<string> {"func","emu.getLabelAddress","emu.getLabelAddress(label)","label - *String* The label to look up.","","Returns the integer address of the given label."},
 
 			new List<string> {"func","emu.getScreenBuffer","emu.getScreenBuffer()","", "*Array* 32-bit integers in ARGB format", "Returns an array of ARGB values for the entire screen (256px by 240px) - can be used with emu.setScreenBuffer() to alter the frame."},
 			new List<string> {"func","emu.setScreenBuffer","emu.setScreenBuffer(screenBuffer)", "screenBuffer - *Array* An array of 32-bit integers in ARGB format", "","Replaces the current frame with the contents of the specified array."},

@@ -12,12 +12,10 @@ Breakpoint::~Breakpoint()
 
 bool Breakpoint::Matches(uint32_t memoryAddr, AddressTypeInfo &info)
 {
-	if(_startAddr == -1) {
-		return true;
-	}
-
 	if(_memoryType == DebugMemoryType::CpuMemory) {
-		if(_endAddr == -1) {
+		if(_startAddr == -1) {
+			return true;
+		} else if(_endAddr == -1) {
 			return (int32_t)memoryAddr == _startAddr;
 		} else {
 			return (int32_t)memoryAddr >= _startAddr && (int32_t)memoryAddr <= _endAddr;
@@ -27,7 +25,9 @@ bool Breakpoint::Matches(uint32_t memoryAddr, AddressTypeInfo &info)
 		(_memoryType == DebugMemoryType::WorkRam && info.Type == AddressType::WorkRam) ||
 		(_memoryType == DebugMemoryType::SaveRam && info.Type == AddressType::SaveRam)
 	) {
-		if(_endAddr == -1) {
+		if(_startAddr == -1) {
+			return true;
+		} else if(_endAddr == -1) {
 			return info.Address == _startAddr;
 		} else {
 			return info.Address >= _startAddr && info.Address <= _endAddr;
@@ -39,12 +39,10 @@ bool Breakpoint::Matches(uint32_t memoryAddr, AddressTypeInfo &info)
 
 bool Breakpoint::Matches(uint32_t memoryAddr, PpuAddressTypeInfo &info)
 {
-	if(_startAddr == -1) {
-		return true;
-	}
-
 	if(_memoryType == DebugMemoryType::PpuMemory) {
-		if(_endAddr == -1) {
+		if(_startAddr == -1) {
+			return true;
+		} else if(_endAddr == -1) {
 			return (int32_t)memoryAddr == _startAddr;
 		} else {
 			return (int32_t)memoryAddr >= _startAddr && (int32_t)memoryAddr <= _endAddr;
@@ -52,9 +50,12 @@ bool Breakpoint::Matches(uint32_t memoryAddr, PpuAddressTypeInfo &info)
 	} else if(
 		(_memoryType == DebugMemoryType::ChrRam && info.Type == PpuAddressType::ChrRam) ||
 		(_memoryType == DebugMemoryType::ChrRom && info.Type == PpuAddressType::ChrRom) ||
-		(_memoryType == DebugMemoryType::PaletteMemory && info.Type == PpuAddressType::PaletteRam)
+		(_memoryType == DebugMemoryType::PaletteMemory && info.Type == PpuAddressType::PaletteRam) ||
+		(_memoryType == DebugMemoryType::NametableRam && info.Type == PpuAddressType::NametableRam)
 	) {
-		if(_endAddr == -1) {
+		if(_startAddr == -1) {
+			return true;
+		} else if(_endAddr == -1) {
 			return info.Address == _startAddr;
 		} else {
 			return info.Address >= _startAddr && info.Address <= _endAddr;
@@ -68,11 +69,13 @@ bool Breakpoint::HasBreakpointType(BreakpointType type)
 {
 	switch(type) {
 		case BreakpointType::Global: return (_type == BreakpointTypeFlags::Global);
-		case BreakpointType::Execute: return (_type & BreakpointTypeFlags::Execute) == BreakpointTypeFlags::Execute;
-		case BreakpointType::ReadRam: return (_type & BreakpointTypeFlags::ReadRam) == BreakpointTypeFlags::ReadRam;
-		case BreakpointType::WriteRam: return (_type & BreakpointTypeFlags::WriteRam) == BreakpointTypeFlags::WriteRam;
-		case BreakpointType::ReadVram: return (_type & BreakpointTypeFlags::ReadVram) == BreakpointTypeFlags::ReadVram;
-		case BreakpointType::WriteVram: return (_type & BreakpointTypeFlags::WriteVram) == BreakpointTypeFlags::WriteVram;
+		case BreakpointType::Execute: return (_type & BreakpointTypeFlags::Execute) != 0;
+		case BreakpointType::ReadRam: return (_type & BreakpointTypeFlags::ReadRam) != 0;
+		case BreakpointType::WriteRam: return (_type & BreakpointTypeFlags::WriteRam) != 0;
+		case BreakpointType::ReadVram: return (_type & BreakpointTypeFlags::ReadVram) != 0;
+		case BreakpointType::WriteVram: return (_type & BreakpointTypeFlags::WriteVram) != 0;
+		case BreakpointType::DummyReadRam: return (_type & BreakpointTypeFlags::ReadRam) != 0 && _processDummyReadWrites;
+		case BreakpointType::DummyWriteRam: return (_type & BreakpointTypeFlags::WriteRam) != 0 && _processDummyReadWrites;
 	}
 	return false;
 }

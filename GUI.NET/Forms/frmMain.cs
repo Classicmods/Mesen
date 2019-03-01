@@ -33,7 +33,11 @@ namespace Mesen.GUI.Forms
 		private frmHistoryViewer _historyViewerWindow;
 		private frmHdPackEditor _hdPackEditorWindow;
 		private ResourcePath? _currentRomPath = null;
-		List<string> _luaScriptsToLoad = new List<string>();
+
+		private string _movieToRecord = null;
+		private List<string> _luaScriptsToLoad = new List<string>();
+		private bool _loadLastSessionRequested = false;
+
 		private Image _pauseButton = Resources.Pause;
 		private Image _playButton = Resources.Play;
 		private string _currentGame = null;
@@ -68,22 +72,31 @@ namespace Mesen.GUI.Forms
 
 		public frmMain(string[] args)
 		{
+			ThemeHelper.InitTheme(this.BackColor);
 			InitializeComponent();
+
+			ThemeHelper.ExcludeFromTheme(panelInfo);
+			ThemeHelper.ExcludeFromTheme(panelRenderer);
 
 			this.StartPosition = FormStartPosition.CenterScreen;
 
 			Version currentVersion = new Version(InteropEmu.GetMesenVersion());
 			lblVersion.Text = currentVersion.ToString();
 
-			_fonts.AddFontFile(Path.Combine(ConfigManager.HomeFolder, "Resources", "PixelFont.ttf"));
-			lblVersion.Font = new Font(_fonts.Families[0], 11);
+			if(!Program.IsMono) {
+				_fonts.AddFontFile(Path.Combine(ConfigManager.HomeFolder, "Resources", "PixelFont.ttf"));
+				lblVersion.Font = new Font(_fonts.Families[0], 10);
+			} else {
+				lblVersion.Margin = new Padding(0, 0, 3, 0);
+				picIcon.Margin = new Padding(3, 5, 3, 3);
+			}
 
 #if AUTOBUILD
 			string devVersion = ResourceManager.ReadZippedResource("DevBuild.txt");
 			if(devVersion != null) {
 				Size versionSize = TextRenderer.MeasureText(devVersion, lblVersion.Font);
 				lblVersion.Text = devVersion;
-				lblVersion.Anchor = AnchorStyles.Left;
+				lblVersion.Anchor = AnchorStyles.Right;
 				int newWidth = versionSize.Width + 30;
 				panelInfo.Left -= newWidth - panelInfo.Width;
 				panelInfo.Width = newWidth;
@@ -109,6 +122,29 @@ namespace Mesen.GUI.Forms
 				ConfigManager.DoNotSaveSettings = true;
 			}
 
+			if(switches.Contains("/loadlastsession")) {
+				_loadLastSessionRequested = true;
+			}
+
+			Regex recordMovieCommand = new Regex("/recordmovie=([^\"]+)");
+			foreach(string command in switches) {
+				Match match = recordMovieCommand.Match(command);
+				if(match.Success) {
+					string moviePath = match.Groups[1].Value;
+					string folder = Path.GetDirectoryName(moviePath);
+					if(string.IsNullOrWhiteSpace(folder)) {
+						moviePath = Path.Combine(ConfigManager.MovieFolder, moviePath);
+					} else if(!Path.IsPathRooted(moviePath)) {
+						moviePath = Path.Combine(Program.OriginalFolder, moviePath);
+					}
+					if(!moviePath.ToLower().EndsWith(".mmo")) {
+						moviePath += ".mmo";
+					}
+					_movieToRecord = moviePath;
+					break;
+				}
+			}
+
 			ConfigManager.ProcessSwitches(switches);
 		}
 
@@ -120,18 +156,19 @@ namespace Mesen.GUI.Forms
 			if(romPath != null) {
 				this.LoadFile(romPath);
 			} else {
-
 				if(_emuThread == null) {
 					//When no ROM is loaded, only process Lua scripts if a ROM was specified as a command line param
 					_luaScriptsToLoad.Clear();
+					_movieToRecord = null;
+					_loadLastSessionRequested = false;
 				} else {
 					//No game was specified, but a game is running already, load the scripts right away
-					LoadLuaScripts();
+					ProcessPostLoadCommandSwitches();
 				}
 			}
 		}
 
-		private void LoadLuaScripts()
+		private void ProcessPostLoadCommandSwitches()
 		{
 			if(_luaScriptsToLoad.Count > 0) {
 				foreach(string luaScript in _luaScriptsToLoad) {
@@ -139,6 +176,20 @@ namespace Mesen.GUI.Forms
 					scriptWindow.LoadScriptFile(luaScript);
 				}
 				_luaScriptsToLoad.Clear();
+			}
+
+			if(_movieToRecord != null) {
+				if(InteropEmu.MovieRecording()) {
+					InteropEmu.MovieStop();
+				}
+				RecordMovieOptions options = new RecordMovieOptions(_movieToRecord, "", "", RecordMovieFrom.StartWithSaveData);
+				InteropEmu.MovieRecord(ref options);
+				_movieToRecord = null;
+			}
+
+			if(_loadLastSessionRequested) {
+				_loadLastSessionRequested = false;
+				LoadLastSession();
 			}
 		}
 
@@ -209,6 +260,8 @@ namespace Mesen.GUI.Forms
 
 			mnuDebugDualSystemSecondaryCpu.Checked = ConfigManager.Config.DebugInfo.DebugConsoleId == InteropEmu.ConsoleId.Slave;
 			InteropEmu.DebugSetDebuggerConsole(ConfigManager.Config.DebugInfo.DebugConsoleId);
+
+			BaseForm.StartBackgroundTimer();
 		}
 
 		private void ProcessFullscreenSwitch(List<string> switches)
@@ -275,6 +328,7 @@ namespace Mesen.GUI.Forms
 			}
 
 			_shuttingDown = true;
+			CursorManager.StopTimers();
 			BaseForm.StopBackgroundTimer();
 			_logWindow?.Close();
 			_historyViewerWindow?.Close();
@@ -521,6 +575,11 @@ namespace Mesen.GUI.Forms
 				enabled = false;
 			}
 
+			if(_fullscreenMode == enabled) {
+				//Fullscreen mode already matches, no need to do anything
+				return;
+			}
+
 			//Setup message to show on screen when paused while in fullscreen (instructions to revert to windowed mode)
 			InteropEmu.SetPauseScreenMessage("");
 			if(enabled) {
@@ -596,7 +655,7 @@ namespace Mesen.GUI.Forms
 					VideoInfo.ApplyOverscanConfig();
 					_currentGame = InteropEmu.GetRomInfo().GetRomName();
 					InteropEmu.SetNesModel(ConfigManager.Config.Region);
-					InitializeNsfMode(false, true);
+					InitializeNsfMode(true);
 					CheatInfo.ApplyCheats();
 					GameSpecificInfo.ApplyGameSpecificConfig();
 					UpdateStateMenu(mnuSaveState, true);
@@ -610,19 +669,8 @@ namespace Mesen.GUI.Forms
 					this.StartEmuThread();
 					this.BeginInvoke((MethodInvoker)(() => {
 						UpdateViewerSize();
-						LoadLuaScripts();
+						ProcessPostLoadCommandSwitches();
 					}));
-
-					Task.Run(() => {
-						//If a workspace is already loaded for this game, make sure we setup the labels, watch, etc properly
-						DebugWorkspaceManager.SetupWorkspace();
-					});
-					break;
-
-				case InteropEmu.ConsoleNotificationType.PpuFrameDone:
-					if(InteropEmu.IsNsf()) {
-						this.ctrlNsfPlayer.CountFrame();
-					}
 					break;
 
 				case InteropEmu.ConsoleNotificationType.GameReset:
@@ -654,6 +702,7 @@ namespace Mesen.GUI.Forms
 					break;
 
 				case InteropEmu.ConsoleNotificationType.BeforeEmulationStop:
+					//Close all debugger windows before continuing.
 					this.Invoke((Action)(() => {
 						DebugWindowManager.CloseAll();
 					}));
@@ -791,8 +840,15 @@ namespace Mesen.GUI.Forms
 			mnuScriptWindow.InitShortcut(this, nameof(DebuggerShortcutsConfig.OpenScriptWindow));
 			mnuTraceLogger.InitShortcut(this, nameof(DebuggerShortcutsConfig.OpenTraceLogger));
 			mnuTextHooker.InitShortcut(this, nameof(DebuggerShortcutsConfig.OpenTextHooker));
+			mnuProfiler.InitShortcut(this, nameof(DebuggerShortcutsConfig.OpenProfiler));
+			mnuWatchWindow.InitShortcut(this, nameof(DebuggerShortcutsConfig.OpenWatchWindow));
+
+			mnuOpenNametableViewer.InitShortcut(this, nameof(DebuggerShortcutsConfig.OpenNametableViewer));
+			mnuOpenChrViewer.InitShortcut(this, nameof(DebuggerShortcutsConfig.OpenChrViewer));
+			mnuOpenSpriteViewer.InitShortcut(this, nameof(DebuggerShortcutsConfig.OpenSpriteViewer));
+			mnuOpenPaletteViewer.InitShortcut(this, nameof(DebuggerShortcutsConfig.OpenPaletteViewer));
 		}
-		
+
 		private void BindShortcut(ToolStripMenuItem item, EmulatorShortcut shortcut, Func<bool> isActionEnabled = null)
 		{
 			item.Click += (object sender, EventArgs e) => {
@@ -1090,7 +1146,7 @@ namespace Mesen.GUI.Forms
 					mnuStopMovie.Enabled = running && !netPlay && (moviePlaying || movieRecording);
 					mnuRecordMovie.Enabled = running && !moviePlaying && !movieRecording && !isNetPlayClient;
 					mnuGameConfig.Enabled = !moviePlaying && !movieRecording;
-					mnuHistoryViewer.Enabled = running && !InteropEmu.IsNsf() && InteropEmu.HistoryViewerEnabled();
+					mnuHistoryViewer.Enabled = running && InteropEmu.HistoryViewerEnabled();
 
 					bool waveRecording = InteropEmu.WaveIsRecording();
 					mnuWaveRecord.Enabled = running && !waveRecording;
@@ -1127,6 +1183,14 @@ namespace Mesen.GUI.Forms
 					mnuScriptWindow.Enabled = running;
 					mnuTextHooker.Enabled = running;
 					mnuTraceLogger.Enabled = running;
+					mnuProfiler.Enabled = running;
+					mnuWatchWindow.Enabled = running;
+
+					mnuPpuViewerCompact.Enabled = running;
+					mnuOpenNametableViewer.Enabled = running;
+					mnuOpenChrViewer.Enabled = running;
+					mnuOpenSpriteViewer.Enabled = running;
+					mnuOpenPaletteViewer.Enabled = running;
 
 #if !HIDETESTMENU
 					//Keep this option hidden for now, until some remaining issues are fixed.
@@ -1304,8 +1368,8 @@ namespace Mesen.GUI.Forms
 
 		private void ctrlRenderer_DoubleClick(object sender, EventArgs e)
 		{
-			if(!CursorManager.NeedMouseIcon && !CursorManager.AllowMouseCapture && !DebugWindowManager.ScriptWindowOpened) {
-				//Disable double clicking (used to switch to fullscreen mode) when using a mouse-controlled device
+			if(!CursorManager.NeedMouseIcon && !CursorManager.AllowMouseCapture && !DebugWindowManager.HasOpenedWindow) {
+				//Disable double clicking (used to switch to fullscreen mode) when using a mouse-controlled device (or when debugger is opened)
 				ToggleFullscreen();
 			}
 		}
@@ -1344,7 +1408,7 @@ namespace Mesen.GUI.Forms
 			}
 		}
 
-		private void InitializeNsfMode(bool updateTextOnly = false, bool gameLoaded = false)
+		private void InitializeNsfMode(bool gameLoaded = false)
 		{
 			if(this.InvokeRequired) {
 				if(InteropEmu.IsNsf()) {
@@ -1355,7 +1419,7 @@ namespace Mesen.GUI.Forms
 						InteropEmu.StopServer();
 					}
 				}
-				this.BeginInvoke((MethodInvoker)(() => this.InitializeNsfMode(updateTextOnly, gameLoaded)));
+				this.BeginInvoke((MethodInvoker)(() => this.InitializeNsfMode(gameLoaded)));
 			} else {
 				if(InteropEmu.IsNsf()) {
 					this.SetFullscreenState(false);
@@ -1373,9 +1437,6 @@ namespace Mesen.GUI.Forms
 					}
 					this._isNsfPlayerMode = true;
 					this.ctrlNsfPlayer.UpdateText();
-					if(!updateTextOnly) {
-						this.ctrlNsfPlayer.ResetCount();
-					}
 					this.ctrlNsfPlayer.Visible = true;					
 					this.ctrlNsfPlayer.Focus();
 

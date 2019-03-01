@@ -31,15 +31,7 @@ void VsControlManager::Reset(bool softReset)
 void VsControlManager::StreamState(bool saving)
 {
 	ControlManager::StreamState(saving);
-
-	VsInputType unusedInputType = VsInputType::Default;
-
-	uint32_t dipSwitches = _console->GetSettings()->GetDipSwitches();
-	Stream(_prgChrSelectBit, _protectionCounter, _refreshState, unusedInputType, dipSwitches);
-	
-	if(!saving) {
-		_console->GetSettings()->SetDipSwitches(dipSwitches);
-	}
+	Stream(_prgChrSelectBit, _protectionCounter, _refreshState);
 }
 
 void VsControlManager::GetMemoryRanges(MemoryRanges &ranges)

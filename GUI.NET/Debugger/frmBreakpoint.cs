@@ -29,6 +29,7 @@ namespace Mesen.GUI.Debugger
 			AddBinding("MemoryType", cboBreakpointType);
 			AddBinding("Enabled", chkEnabled);
 			AddBinding("MarkEvent", chkMarkOnEventViewer);
+			AddBinding("ProcessDummyReadWrites", chkProcessDummyReadWrites);
 			AddBinding("Address", txtAddress);
 			AddBinding("StartAddress", txtFrom);
 			AddBinding("EndAddress", txtTo);
@@ -64,6 +65,7 @@ namespace Mesen.GUI.Debugger
 				cboBreakpointType.Items.Add(ResourceHelper.GetEnumText(DebugMemoryType.ChrRam));
 			}
 
+			cboBreakpointType.Items.Add(ResourceHelper.GetEnumText(DebugMemoryType.NametableRam));
 			cboBreakpointType.Items.Add(ResourceHelper.GetEnumText(DebugMemoryType.PaletteMemory));
 
 			this.toolTip.SetToolTip(this.picExpressionWarning, "Condition contains invalid syntax or symbols.");
@@ -77,7 +79,7 @@ namespace Mesen.GUI.Debugger
 			Breakpoint bp = (Breakpoint)this.Entity;
 			if(!BreakpointManager.Breakpoints.Contains(bp)) {
 				//This is a new breakpoint, make sure address fields are empty instead of 0
-				if(txtAddress.Text == "0") {
+				if(bp.Address == UInt32.MaxValue) {
 					txtAddress.Text = "";
 				}
 				if(txtFrom.Text == "0") {
@@ -115,7 +117,9 @@ namespace Mesen.GUI.Debugger
 				"A/X/Y/PS/SP: Value of registers" + Environment.NewLine +
 				"PC: Program Counter" + Environment.NewLine +
 				"OpPC: Address of the current instruction's first byte" + Environment.NewLine +
-				"Irq/Nmi: True if the Irq/Nmi flags are set" + Environment.NewLine +
+				"PreviousOpPC: Address of the previous instruction's first byte" + Environment.NewLine +
+				"Irq/Nmi/Sprite0Hit/SpriteOverflow/VerticalBlank: True if the corresponding flags are set" + Environment.NewLine +
+				"Branched: True if the current instruction was reached by jumping or branching" + Environment.NewLine +
 				"Cycle/Scanline: Current cycle (0-340)/scanline(-1 to 260) of the PPU" + Environment.NewLine +
 				"Frame: PPU frame number (since power on/reset)" + Environment.NewLine +
 				"Value: Current value being read/written from/to memory" + Environment.NewLine +
@@ -190,10 +194,10 @@ namespace Mesen.GUI.Debugger
 		{
 			int value = -1;
 			if(!int.TryParse(field.Text, NumberStyles.HexNumber, null, out value) || value > maxValue) {
-				field.ForeColor = Color.Red;
+				field.ForeColor = ThemeHelper.Theme.ErrorTextColor;
 				value = -1;
 			} else {
-				field.ForeColor = SystemColors.WindowText;
+				field.ForeColor = ThemeHelper.Theme.TextBoxForeColor;
 			}
 			return value;
 		}
@@ -212,18 +216,38 @@ namespace Mesen.GUI.Debugger
 		{
 			radRange.Checked = true;
 		}
-
-
+		
 		private void cboBreakpointType_SelectedIndexChanged(object sender, EventArgs e)
 		{
 			DebugMemoryType type = cboBreakpointType.GetEnumValue<DebugMemoryType>();
 
 			chkExec.Visible = Breakpoint.IsTypeCpuBreakpoint(type);
+			chkProcessDummyReadWrites.Visible = Breakpoint.IsTypeCpuBreakpoint(type);
 
 			string maxValue = (InteropEmu.DebugGetMemorySize(type) - 1).ToString("X2");
 			string minValue = "".PadLeft(maxValue.Length, '0');
 
 			lblRange.Text = $"(range: ${minValue}-${maxValue})";
+		}
+
+		private void UpdateDummyReadWriteCheckbox()
+		{
+			if(chkRead.Checked || chkWrite.Checked) {
+				chkProcessDummyReadWrites.Enabled = true;
+			} else {
+				chkProcessDummyReadWrites.Enabled = false;
+				chkProcessDummyReadWrites.Checked = false;
+			}
+		}
+
+		private void chkRead_CheckedChanged(object sender, EventArgs e)
+		{
+			UpdateDummyReadWriteCheckbox();
+		}
+
+		private void chkWrite_CheckedChanged(object sender, EventArgs e)
+		{
+			UpdateDummyReadWriteCheckbox();
 		}
 	}
 }

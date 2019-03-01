@@ -36,16 +36,26 @@ namespace Mesen.GUI.Debugger
 				GetMember(nameof(DebuggerShortcutsConfig.MarkAsCode)),
 				GetMember(nameof(DebuggerShortcutsConfig.MarkAsData)),
 				GetMember(nameof(DebuggerShortcutsConfig.MarkAsUnidentified)),
+				GetMember(nameof(DebuggerShortcutsConfig.GoToAll)),
+				GetMember(nameof(DebuggerShortcutsConfig.CodeWindow_EditInMemoryViewer)),
+				GetMember(nameof(DebuggerShortcutsConfig.MemoryViewer_ViewInDisassembly)),
 
 				GetMember(nameof(DebuggerShortcutsConfig.OpenApuViewer)),
 				GetMember(nameof(DebuggerShortcutsConfig.OpenAssembler)),
 				GetMember(nameof(DebuggerShortcutsConfig.OpenDebugger)),
 				GetMember(nameof(DebuggerShortcutsConfig.OpenEventViewer)),
 				GetMember(nameof(DebuggerShortcutsConfig.OpenMemoryTools)),
+				GetMember(nameof(DebuggerShortcutsConfig.OpenProfiler)),
 				GetMember(nameof(DebuggerShortcutsConfig.OpenPpuViewer)),
 				GetMember(nameof(DebuggerShortcutsConfig.OpenScriptWindow)),
 				GetMember(nameof(DebuggerShortcutsConfig.OpenTextHooker)),
-				GetMember(nameof(DebuggerShortcutsConfig.OpenTraceLogger))
+				GetMember(nameof(DebuggerShortcutsConfig.OpenTraceLogger)),
+				GetMember(nameof(DebuggerShortcutsConfig.OpenWatchWindow)),
+
+				GetMember(nameof(DebuggerShortcutsConfig.OpenNametableViewer)),
+				GetMember(nameof(DebuggerShortcutsConfig.OpenChrViewer)),
+				GetMember(nameof(DebuggerShortcutsConfig.OpenSpriteViewer)),
+				GetMember(nameof(DebuggerShortcutsConfig.OpenPaletteViewer)),
 			};
 
 			ctrlDbgShortcutsMemoryViewer.Shortcuts = new FieldInfo[] {
@@ -57,8 +67,7 @@ namespace Mesen.GUI.Debugger
 				GetMember(nameof(DebuggerShortcutsConfig.MemoryViewer_Import)),
 				GetMember(nameof(DebuggerShortcutsConfig.MemoryViewer_Export)),
 				GetMember(nameof(DebuggerShortcutsConfig.MemoryViewer_ViewInCpuMemory)),
-				GetMember(nameof(DebuggerShortcutsConfig.MemoryViewer_ViewInMemoryType)),
-				GetMember(nameof(DebuggerShortcutsConfig.MemoryViewer_ViewInDisassembly))
+				GetMember(nameof(DebuggerShortcutsConfig.MemoryViewer_ViewInMemoryType))
 			};
 
 			ctrlDbgShortcutsScriptWindow.Shortcuts = new FieldInfo[] {
@@ -66,6 +75,13 @@ namespace Mesen.GUI.Debugger
 				GetMember(nameof(DebuggerShortcutsConfig.ScriptWindow_SaveScript)),
 				GetMember(nameof(DebuggerShortcutsConfig.ScriptWindow_RunScript)),
 				GetMember(nameof(DebuggerShortcutsConfig.ScriptWindow_StopScript))
+			};
+
+			ctrlDbgShortcutsPpuViewer.Shortcuts = new FieldInfo[] {
+				GetMember(nameof(DebuggerShortcutsConfig.PpuViewer_ToggleView)),
+				GetMember(nameof(DebuggerShortcutsConfig.PpuViewer_ToggleZoom)),
+				GetMember(nameof(DebuggerShortcutsConfig.PpuViewer_AddBreakpointTile)),
+				GetMember(nameof(DebuggerShortcutsConfig.PpuViewer_AddBreakpointAttribute)),
 			};
 
 			ctrlDbgShortcutsDebugger.Shortcuts = new FieldInfo[] {
@@ -88,7 +104,7 @@ namespace Mesen.GUI.Debugger
 				GetMember(nameof(DebuggerShortcutsConfig.CodeWindow_SetNextStatement)),
 				GetMember(nameof(DebuggerShortcutsConfig.CodeWindow_EditSubroutine)),
 				GetMember(nameof(DebuggerShortcutsConfig.CodeWindow_EditSelectedCode)),
-				GetMember(nameof(DebuggerShortcutsConfig.CodeWindow_EditInMemoryViewer)),
+				GetMember(nameof(DebuggerShortcutsConfig.CodeWindow_EditSourceFile)),
 				GetMember(nameof(DebuggerShortcutsConfig.CodeWindow_EditLabel)),
 				GetMember(nameof(DebuggerShortcutsConfig.CodeWindow_NavigateBack)),
 				GetMember(nameof(DebuggerShortcutsConfig.CodeWindow_NavigateForward)),
@@ -111,6 +127,8 @@ namespace Mesen.GUI.Debugger
 				GetMember(nameof(DebuggerShortcutsConfig.BreakpointList_GoToLocation)),
 				GetMember(nameof(DebuggerShortcutsConfig.BreakpointList_Delete)),
 				GetMember(nameof(DebuggerShortcutsConfig.WatchList_Delete)),
+				GetMember(nameof(DebuggerShortcutsConfig.WatchList_MoveUp)),
+				GetMember(nameof(DebuggerShortcutsConfig.WatchList_MoveDown)),
 				GetMember(nameof(DebuggerShortcutsConfig.SaveRom)),
 				GetMember(nameof(DebuggerShortcutsConfig.SaveRomAs)),
 				GetMember(nameof(DebuggerShortcutsConfig.SaveEditAsIps)),
@@ -143,6 +161,7 @@ namespace Mesen.GUI.Debugger
 			ctrlDbgShortcutsMemoryViewer.InitializeGrid();
 			ctrlDbgShortcutsScriptWindow.InitializeGrid();
 			ctrlDbgShortcutsShared.InitializeGrid();
+			ctrlDbgShortcutsPpuViewer.InitializeGrid();
 		}
 	}
 }

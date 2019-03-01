@@ -33,7 +33,15 @@
 			this.mnuMarkAsCode = new System.Windows.Forms.ToolStripMenuItem();
 			this.mnuMarkAsData = new System.Windows.Forms.ToolStripMenuItem();
 			this.mnuMarkAsUnidentifiedData = new System.Windows.Forms.ToolStripMenuItem();
+			this.toolStripMenuItem3 = new System.Windows.Forms.ToolStripSeparator();
+			this.mnuPerfTracker = new System.Windows.Forms.ToolStripMenuItem();
+			this.mnuPerfTrackerFullscreen = new System.Windows.Forms.ToolStripMenuItem();
+			this.mnuPerfTrackerCompact = new System.Windows.Forms.ToolStripMenuItem();
+			this.mnuPerfTrackerTextOnly = new System.Windows.Forms.ToolStripMenuItem();
 			this.toolStripMenuItem4 = new System.Windows.Forms.ToolStripSeparator();
+			this.mnuPerfTrackerDisabled = new System.Windows.Forms.ToolStripMenuItem();
+			this.sepMarkSelectionAs = new System.Windows.Forms.ToolStripSeparator();
+			this.mnuEditSourceFile = new System.Windows.Forms.ToolStripMenuItem();
 			this.mnuEditSelectedCode = new System.Windows.Forms.ToolStripMenuItem();
 			this.mnuEditSubroutine = new System.Windows.Forms.ToolStripMenuItem();
 			this.mnuUndoPrgChrEdit = new System.Windows.Forms.ToolStripMenuItem();
@@ -76,7 +84,10 @@
 			// 
 			this.contextMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.mnuMarkSelectionAs,
-            this.toolStripMenuItem4,
+            this.toolStripMenuItem3,
+            this.mnuPerfTracker,
+            this.sepMarkSelectionAs,
+            this.mnuEditSourceFile,
             this.mnuEditSelectedCode,
             this.mnuEditSubroutine,
             this.mnuUndoPrgChrEdit,
@@ -104,7 +115,7 @@
             this.mnuSwitchView,
             this.mnuShowSourceAsComments});
 			this.contextMenu.Name = "contextMenuWatch";
-			this.contextMenu.Size = new System.Drawing.Size(254, 514);
+			this.contextMenu.Size = new System.Drawing.Size(254, 564);
 			this.contextMenu.Closed += new System.Windows.Forms.ToolStripDropDownClosedEventHandler(this.contextMenuCode_Closed);
 			this.contextMenu.Opening += new System.ComponentModel.CancelEventHandler(this.contextMenuCode_Opening);
 			// 
@@ -142,10 +153,72 @@
 			this.mnuMarkAsUnidentifiedData.Text = "Unidentified Code/Data";
 			this.mnuMarkAsUnidentifiedData.Click += new System.EventHandler(this.mnuMarkAsUnidentifiedData_Click);
 			// 
+			// toolStripMenuItem3
+			// 
+			this.toolStripMenuItem3.Name = "toolStripMenuItem3";
+			this.toolStripMenuItem3.Size = new System.Drawing.Size(250, 6);
+			// 
+			// mnuPerfTracker
+			// 
+			this.mnuPerfTracker.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.mnuPerfTrackerFullscreen,
+            this.mnuPerfTrackerCompact,
+            this.mnuPerfTrackerTextOnly,
+            this.toolStripMenuItem4,
+            this.mnuPerfTrackerDisabled});
+			this.mnuPerfTracker.Image = global::Mesen.GUI.Properties.Resources.PerfTracker;
+			this.mnuPerfTracker.Name = "mnuPerfTracker";
+			this.mnuPerfTracker.Size = new System.Drawing.Size(253, 22);
+			this.mnuPerfTracker.Text = "Performance Tracker";
+			this.mnuPerfTracker.DropDownOpening += new System.EventHandler(this.mnuPerfTracker_DropDownOpening);
+			// 
+			// mnuPerfTrackerFullscreen
+			// 
+			this.mnuPerfTrackerFullscreen.Name = "mnuPerfTrackerFullscreen";
+			this.mnuPerfTrackerFullscreen.Size = new System.Drawing.Size(152, 22);
+			this.mnuPerfTrackerFullscreen.Text = "Fullscreen";
+			this.mnuPerfTrackerFullscreen.Click += new System.EventHandler(this.mnuPerfTrackerFullscreen_Click);
+			// 
+			// mnuPerfTrackerCompact
+			// 
+			this.mnuPerfTrackerCompact.Name = "mnuPerfTrackerCompact";
+			this.mnuPerfTrackerCompact.Size = new System.Drawing.Size(152, 22);
+			this.mnuPerfTrackerCompact.Text = "Compact";
+			this.mnuPerfTrackerCompact.Click += new System.EventHandler(this.mnuPerfTrackerCompact_Click);
+			// 
+			// mnuPerfTrackerTextOnly
+			// 
+			this.mnuPerfTrackerTextOnly.Name = "mnuPerfTrackerTextOnly";
+			this.mnuPerfTrackerTextOnly.Size = new System.Drawing.Size(152, 22);
+			this.mnuPerfTrackerTextOnly.Text = "Text-only";
+			this.mnuPerfTrackerTextOnly.Click += new System.EventHandler(this.mnuPerfTrackerTextOnly_Click);
+			// 
 			// toolStripMenuItem4
 			// 
 			this.toolStripMenuItem4.Name = "toolStripMenuItem4";
-			this.toolStripMenuItem4.Size = new System.Drawing.Size(250, 6);
+			this.toolStripMenuItem4.Size = new System.Drawing.Size(149, 6);
+			// 
+			// mnuPerfTrackerDisabled
+			// 
+			this.mnuPerfTrackerDisabled.Checked = true;
+			this.mnuPerfTrackerDisabled.CheckState = System.Windows.Forms.CheckState.Checked;
+			this.mnuPerfTrackerDisabled.Name = "mnuPerfTrackerDisabled";
+			this.mnuPerfTrackerDisabled.Size = new System.Drawing.Size(152, 22);
+			this.mnuPerfTrackerDisabled.Text = "Disabled";
+			this.mnuPerfTrackerDisabled.Click += new System.EventHandler(this.mnuPerfTrackerDisabled_Click);
+			// 
+			// sepMarkSelectionAs
+			// 
+			this.sepMarkSelectionAs.Name = "sepMarkSelectionAs";
+			this.sepMarkSelectionAs.Size = new System.Drawing.Size(250, 6);
+			// 
+			// mnuEditSourceFile
+			// 
+			this.mnuEditSourceFile.Image = global::Mesen.GUI.Properties.Resources.Edit;
+			this.mnuEditSourceFile.Name = "mnuEditSourceFile";
+			this.mnuEditSourceFile.Size = new System.Drawing.Size(253, 22);
+			this.mnuEditSourceFile.Text = "Edit Source File";
+			this.mnuEditSourceFile.Click += new System.EventHandler(this.mnuEditSourceFile_Click);
 			// 
 			// mnuEditSelectedCode
 			// 
@@ -417,7 +490,7 @@
 		private System.Windows.Forms.ToolStripMenuItem mnuMarkAsCode;
 		private System.Windows.Forms.ToolStripMenuItem mnuMarkAsData;
 		private System.Windows.Forms.ToolStripMenuItem mnuMarkAsUnidentifiedData;
-		private System.Windows.Forms.ToolStripSeparator toolStripMenuItem4;
+		private System.Windows.Forms.ToolStripSeparator sepMarkSelectionAs;
 		private System.Windows.Forms.ToolStripMenuItem mnuEditSelectedCode;
 		private System.Windows.Forms.ToolStripMenuItem mnuEditSubroutine;
 		private System.Windows.Forms.ToolStripMenuItem mnuUndoPrgChrEdit;
@@ -454,5 +527,13 @@
 		private System.Windows.Forms.ToolStripMenuItem mnuSwitchView;
 		public System.Windows.Forms.ContextMenuStrip contextMenu;
 		private System.Windows.Forms.ToolStripMenuItem mnuShowSourceAsComments;
+		private System.Windows.Forms.ToolStripMenuItem mnuEditSourceFile;
+		private System.Windows.Forms.ToolStripSeparator toolStripMenuItem3;
+		private System.Windows.Forms.ToolStripMenuItem mnuPerfTracker;
+		private System.Windows.Forms.ToolStripMenuItem mnuPerfTrackerFullscreen;
+		private System.Windows.Forms.ToolStripMenuItem mnuPerfTrackerCompact;
+		private System.Windows.Forms.ToolStripMenuItem mnuPerfTrackerTextOnly;
+		private System.Windows.Forms.ToolStripSeparator toolStripMenuItem4;
+		private System.Windows.Forms.ToolStripMenuItem mnuPerfTrackerDisabled;
 	}
 }

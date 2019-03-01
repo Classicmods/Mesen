@@ -43,6 +43,8 @@
 			<Control ID="mnuScale2x">2x</Control>
 			<Control ID="mnuScale3x">3x</Control>
 			<Control ID="mnuScale4x">4x</Control>
+			<Control ID="mnuScale5x">5x</Control>
+			<Control ID="mnuScale6x">6x</Control>
 			<Control ID="mnuFullscreen">Plein écran</Control>
 			<Control ID="mnuVideoFilter">Filtre vidéo</Control>
 			<Control ID="mnuNoneFilter">Aucun</Control>
@@ -115,6 +117,7 @@
 			<Control ID="lblSoundChips">Puces audio</Control>
 			<Control ID="lblRecording">ENR</Control>
 			<Control ID="lblSlowMotion">Ralenti</Control>
+			<Control ID="lblRewinding">Rembobinage</Control>
 			<Control ID="lblFastForward">Avance rapide</Control>
 		</Form>
 		<Form ID="frmLogWindow" Title="Fenêtre de log">
@@ -218,6 +221,12 @@
 			<Control ID="lblDisplayPosition">Position d'affichage :</Control>
 			<Control ID="chkDisplayInputHorizontally">Afficher horizontalement</Control>
 
+			<Control ID="lblSmall">Petit</Control>
+			<Control ID="lblLarge">Large</Control>
+			<Control ID="lblDeadzone">Taille du deadzone :</Control>
+
+			<Control ID="chkHideMousePointerForZapper">Cacher la souris lorsqu'un zapper est connecté</Control>
+
 			<Control ID="lblKeyBinding">Attention: Votre configuration actuelle contient des conflits - certaines touches sur votre clavier ou manette sont mappées à plusieurs boutons sur la console. Veuillez réviser votre configuration et la corriger au besoin.</Control>
 		</Form>
 		<Form ID="frmVideoConfig" Title="Options vidéo">
@@ -280,6 +289,8 @@
 
 			<Control ID="tpgAdvanced">Avancé</Control>
 			<Control ID="lblScreenRotation">Rotation de l'écran :</Control>
+			<Control ID="chkRemoveSpriteLimit">Éliminer la limite de sprites (Réduit le clignotement dans certains jeux)</Control>
+			<Control ID="chkAdaptiveSpriteLimit">Automatiquement réactiver la limite de sprites au besoin pour réduire les problèmes graphiques</Control>
 			<Control ID="chkDisableBackground">Désactiver l'arrière-plan</Control>
 			<Control ID="chkDisableSprites">Désactiver les sprites</Control>
 			<Control ID="chkForceBackgroundFirstColumn">Forcer l'affichage de l'arrière-plan dans la première colonne</Control>
@@ -298,10 +309,10 @@
 			<Control ID="lblRewindSpeed">Vitesse du rembobinage :</Control>
 
 			<Control ID="tpgAdvanced">Avancé</Control>
+			<Control ID="lblDeveloperSettings">Options recommandées pour les développeurs (homebrew / ROM hacking)</Control>
+			<Control ID="lblMiscSettings">Options diverses</Control>
 			<Control ID="chkUseAlternativeMmc3Irq">Utiliser la version alternative du comportement des IRQs du MMC3</Control>
 			<Control ID="chkAllowInvalidInput">Permettre les entrées invalides (Bas+Haut ou Gauche+Droite en même temps)</Control>
-			<Control ID="chkRemoveSpriteLimit">Éliminer la limite de sprites (Réduit le clignotement dans certains jeux)</Control>
-			<Control ID="chkAdaptiveSpriteLimit">Automatiquement réactiver la limite de sprites au besoin pour réduire les problèmes graphiques</Control>
 			<Control ID="chkEnableOamDecay">Activer l'émulation de la dégradation de la mémoire OAM</Control>
 			<Control ID="chkDisablePpu2004Reads">Empêcher la lecture du registre $2004 du PPU (Famicom)</Control>
 			<Control ID="chkDisableOamAddrBug">Désactiver l'émulation du bug de OAMADDR du PPU</Control>
@@ -545,7 +556,7 @@
 		</Form>
 		<Form ID="frmAbout" Title="À propos de...">
 			<Control ID="labelProductName">Mesen</Control>
-			<Control ID="labelCopyright">© 2018 M. Bibaud (aka Sour)</Control>
+			<Control ID="labelCopyright">© 2019 M. Bibaud (aka Sour)</Control>
 			<Control ID="lblWebsite">Site web:</Control>
 			<Control ID="lblLink">www.mesen.ca</Control>
 			<Control ID="labelVersion">Version:</Control>
@@ -608,8 +619,24 @@
 			<Control ID="mnuFile">Fichier</Control>
 			<Control ID="mnuImportMovie">Importer un film</Control>
 			<Control ID="mnuExportMovie">Exporter un film</Control>
+			<Control ID="mnuCreateSaveState">Créer une sauvegarde d'état</Control>
 			<Control ID="mnuResumeGameplay">Reprendre le jeu</Control>
 			<Control ID="mnuClose">Fermer</Control>
+
+			<Control ID="mnuOptions">Options</Control>
+			<Control ID="mnuVideoScale">Taille de l'image</Control>
+			<Control ID="mnuScale1x">1x</Control>
+			<Control ID="mnuScale2x">2x</Control>
+			<Control ID="mnuScale3x">3x</Control>
+			<Control ID="mnuScale4x">4x</Control>
+			<Control ID="mnuScale5x">5x</Control>
+			<Control ID="mnuScale6x">6x</Control>
+		</Form>
+		<Form ID="frmSelectExportRange" Title="Exporter une portion...">
+			<Control ID="lblStartTime">Début:</Control>
+			<Control ID="lblEndTime">Fin:</Control>
+			<Control ID="btnOK">OK</Control>
+			<Control ID="btnCancel">Annuler</Control>
 		</Form>
 		<Form ID="frmHelp" Title="Options de ligne de commande">
 			<Control ID="grpExample">Exemple d'utilisation</Control>
@@ -618,7 +645,6 @@
 			<Control ID="tpgAudioOptions">Options audio</Control>
 			<Control ID="tpgEmulationOptions">Options d'émulation</Control>
 			<Control ID="lblExplanation">Cet exemple ouvrira Mesen en mode plein écran avec le jeu "MyGame.nes" de chargé. Le filtre vidéo NTSC avec un facteur d'agrandissement de 2x sera utilisé et les paramètres d'overscan seront modifiés.  L'option "DoNotSaveSettings" empêche les options données en ligne de commande de devenir les options par défaut de l'émulateur.</Control>
-			<Control ID="txtGeneralOptions">/fullscreen - Démarre Mesen en mode plein écran&#13;&#10;/DoNotSaveSettings - Empêche la sauvegarde des paramètres sur le disque (autrement les options données en ligne de commande seront permanentes)</Control>
 		</Form>
 		<Form ID="frmCopyFiles" Title="En cours d'exécution...">
 			<Control ID="lblCopying">Copie de :</Control>
@@ -755,7 +781,10 @@
 		<Message ID="SaveToFile">Sauvegarder dans un fichier...</Message>
 
 		<Message ID="MovieSegment">Segment #{0}</Message>
+		<Message ID="MovieExportEntireSegment">Exporter le segment entier</Message>
+		<Message ID="MovieExportSpecificRange">Exporter une portion du segment...</Message>
 		<Message ID="MovieSaveError">Une erreur est survenue pendant la sauvegarde du film.</Message>
+		<Message ID="FileSaveError">Une erreur est survenue pendant la sauvegarde du fichier.</Message>
 
 		<Message ID="ClearHistory">Effacer l'historique</Message>
 		<Message ID="LastFolderUsed">Dernier dossier utilisé</Message>
@@ -763,6 +792,11 @@
 		<Message ID="MouseModeEnabled">Mode souris activé - appuyez sur ESC ou pause pour y mettre fin.</Message>
 		<Message ID="BandaiMicrophone">Microphone Bandai</Message>
 		<Message ID="DatachBarcodeReader">Lecteur code-barres Datach</Message>
+
+		<Message ID="HelpFullscreen">/fullscreen - Démarre Mesen en mode plein écran</Message>
+		<Message ID="HelpDoNotSaveSettings">/DoNotSaveSettings - Empêche la sauvegarde des paramètres sur le disque (autrement les options données en ligne de commande seront permanentes)</Message>
+		<Message ID="HelpRecordMovie">/RecordMovie="nom_du_film.mmo" - Démarre l'enregistrement d'un film pour le jeu spécifié en ligne de commande.</Message>
+		<Message ID="HelpLoadLastSession">/LoadLastSession - Reprend le jeu dans l'état où il était lors dans la dernière session de jeu.</Message>
 
 		<Message ID="Resume">Continuer</Message>
 		<Message ID="Pause">Pause</Message>

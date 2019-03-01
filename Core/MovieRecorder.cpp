@@ -130,8 +130,7 @@ void MovieRecorder::GetGameSettings(stringstream &out)
 		case RamPowerOnState::Random: WriteInt(out, MovieKeys::RamPowerOnState, -1); break; //TODO: Shouldn't be used for movies
 	}	
 
-	//VS System flags
-	if(_console->GetAvailableFeatures() == ConsoleFeatures::VsSystem) {
+	if(_console->GetDipSwitchCount() > 0) {
 		WriteString(out, MovieKeys::DipSwitches, HexUtilities::ToHex(settings->GetDipSwitches()));
 	}
 
@@ -238,8 +237,8 @@ bool MovieRecorder::CreateMovie(string movieFile, std::deque<RewindData> &data, 
 	if(startPosition < data.size() && endPosition <= data.size() && _writer->Initialize(_filename)) {
 		vector<shared_ptr<BaseControlDevice>> devices = _console->GetControlManager()->GetControlDevices();
 		
-		if(startPosition > 0 || _console->GetRomInfo().HasBattery) {
-			//Create a movie from a savestate if we don't start from the beginning (or if the game has save ram)
+		if(startPosition > 0 || _console->GetRomInfo().HasBattery || _console->GetSettings()->GetRamPowerOnState() == RamPowerOnState::Random) {
+			//Create a movie from a savestate if we don't start from the beginning (or if the game has save ram, or if the power on ram state is random)
 			_hasSaveState = true;
 			_saveStateData = stringstream();
 			_console->GetSaveStateManager()->GetSaveStateHeader(_saveStateData);

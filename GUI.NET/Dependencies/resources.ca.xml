@@ -43,6 +43,8 @@
 			<Control ID="mnuScale2x">2x</Control>
 			<Control ID="mnuScale3x">3x</Control>
 			<Control ID="mnuScale4x">4x</Control>
+			<Control ID="mnuScale5x">5x</Control>
+			<Control ID="mnuScale6x">6x</Control>
 			<Control ID="mnuFullscreen">Pantalla completa</Control>
 			<Control ID="mnuVideoFilter">Filtre de vídeo</Control>
 			<Control ID="mnuNoneFilter">Cap</Control>
@@ -115,6 +117,7 @@
 			<Control ID="lblSoundChips">Xip de so</Control>
 			<Control ID="lblRecording">REC</Control>
 			<Control ID="lblSlowMotion">Càmera lenta</Control>
+			<Control ID="lblRewinding">Rewinding</Control>
 			<Control ID="lblFastForward">Avanç ràpid</Control>
 		</Form>
 		<Form ID="frmLogWindow" Title="Finestra del registre">
@@ -218,6 +221,12 @@
 			<Control ID="lblDisplayPosition">Posició de pantalla:</Control>
 			<Control ID="chkDisplayInputHorizontally">Mostra horitzontalment</Control>
 
+			<Control ID="lblSmall">Curt</Control>
+			<Control ID="lblLarge">Llarg</Control>
+			<Control ID="lblDeadzone">Controller axis deadzone size:</Control>
+
+			<Control ID="chkHideMousePointerForZapper">Hide mouse pointer when using zapper</Control>
+
 			<Control ID="lblKeyBinding">Advertència: La vostra configuració actual conté assignacions conflictives - algunes tecles del vostre teclat o botons del comandament han estat assignats a múltiples botons al comandament de la NES. Si això no ha estat intencionat, us preguem que reviseu i corregiu les vostres assignacions.</Control>
 		</Form>
 		<Form ID="frmVideoConfig" Title="Opcions de vídeo">
@@ -280,6 +289,8 @@
 
 			<Control ID="tpgAdvanced">Avançat</Control>
 			<Control ID="lblScreenRotation">Rotació de la pantalla:</Control>
+			<Control ID="chkRemoveSpriteLimit">Elimina el límit de sprites (redueix les pampallugues en certs jocs)</Control>
+			<Control ID="chkAdaptiveSpriteLimit">Torna a activar el límit de sprites quan faci falta per tal de prevenir errors gràfics</Control>
 			<Control ID="chkDisableBackground">Desactiva el fons</Control>
 			<Control ID="chkDisableSprites">Desactiva els sprites</Control>
 			<Control ID="chkForceBackgroundFirstColumn">Força l'aparició del fons a la primera columna</Control>
@@ -298,11 +309,11 @@
 			<Control ID="lblRewindSpeed">Velocitat del rebobinat:</Control>
 
 			<Control ID="tpgAdvanced">Avançat</Control>
+			<Control ID="lblDeveloperSettings">Recommended settings for developers (homebrew / ROM hacking)</Control>
+			<Control ID="lblMiscSettings">Configuracions diverses</Control>
 			<Control ID="chkUseAlternativeMmc3Irq">Fes servir el comportament alternatiu de les IRQ de MMC3</Control>
 			<Control ID="chkAllowInvalidInput">Permet entrades invàlides (ex. Amunt+Avall i Esquerra+Dreta alhora)</Control>
 			<Control ID="lblRamPowerOnState">Estat inicial de la memòria durant l'arrancada:</Control>
-			<Control ID="chkRemoveSpriteLimit">Elimina el límit de sprites (redueix les pampallugues en certs jocs)</Control>
-			<Control ID="chkAdaptiveSpriteLimit">Torna a activar el límit de sprites quan faci falta per tal de prevenir errors gràfics</Control>
 			<Control ID="chkEnableOamDecay">Activa l'emulació de la degradació de la memòria OAM</Control>
 			<Control ID="chkDisablePpu2004Reads">Impedeix la lectura del valor $2004 de la PPU (comportament de la Famicom)</Control>
 			<Control ID="chkDisableOamAddrBug">Desactiva l'emulació d'errors OAMADDR de la PPU</Control>
@@ -535,7 +546,7 @@
 		</Form>
 		<Form ID="frmAbout" Title="Quant a...">
 			<Control ID="labelProductName">Mesen</Control>
-			<Control ID="labelCopyright">© 2018 M. Bibaud (aka Sour)</Control>
+			<Control ID="labelCopyright">© 2019 M. Bibaud (aka Sour)</Control>
 			<Control ID="lblWebsite">Lloc web:</Control>
 			<Control ID="lblLink">www.mesen.ca</Control>
 			<Control ID="labelVersion">Versió:</Control>
@@ -598,8 +609,24 @@
 			<Control ID="mnuFile">File</Control>
 			<Control ID="mnuImportMovie">Import Movie</Control>
 			<Control ID="mnuExportMovie">Export Movie</Control>
+			<Control ID="mnuCreateSaveState">Create Save State</Control>
 			<Control ID="mnuResumeGameplay">Resume Gameplay</Control>
 			<Control ID="mnuClose">Close</Control>
+
+			<Control ID="mnuOptions">Opcions</Control>
+			<Control ID="mnuVideoScale">Mida de vídeo</Control>
+			<Control ID="mnuScale1x">1x</Control>
+			<Control ID="mnuScale2x">2x</Control>
+			<Control ID="mnuScale3x">3x</Control>
+			<Control ID="mnuScale4x">4x</Control>
+			<Control ID="mnuScale5x">5x</Control>
+			<Control ID="mnuScale6x">6x</Control>
+		</Form>
+		<Form ID="frmSelectExportRange" Title="Export specific range...">
+			<Control ID="lblStartTime">Start time:</Control>
+			<Control ID="lblEndTime">End time:</Control>
+			<Control ID="btnOK">D'acord</Control>
+			<Control ID="btnCancel">Cancel·la</Control>
 		</Form>
 		<Form ID="frmHelp" Title="Opcions de la línia d'ordres">
 			<Control ID="grpExample">Exemple d'ús</Control>
@@ -608,7 +635,6 @@
 			<Control ID="tpgAudioOptions">Opcions de so</Control>
 			<Control ID="tpgEmulationOptions">Opcions de l'emulació</Control>
 			<Control ID="lblExplanation">Això iniciarà Mesen en mode de pantalla completa i amb la rom "MyGame.nes" carregada. A més, farà servir el filtre NTSC ajustat a una escala de 2x i configurarà les opcions de sobreescaneig. El paràmetre "DoNotSaveSettings" s'utilitza per evitar que els canvis efectuats des de la línia d'ordres es desin permanentment a la configuració de Mesen.</Control>
-			<Control ID="txtGeneralOptions">/fullscreen - Inicia Mesen en pantalla completa&#13;&#10;/DoNotSaveSettings - Evita que els canvis es desin (útil per a evitar que les opcions de la línia d'ordres es converteixin en la configuració per defecte)</Control>
 		</Form>
 		<Form ID="frmRecordMovie" Title="Movie Recording Options">
 			<Control ID="lblSaveTo">Save to:</Control>
@@ -725,7 +751,10 @@
 		<Message ID="SaveToFile">Desa al fitxer...</Message>
 
 		<Message ID="MovieSegment">Segment #{0}</Message>
+		<Message ID="MovieExportEntireSegment">Export entire segment</Message>
+		<Message ID="MovieExportSpecificRange">Export specific range...</Message>
 		<Message ID="MovieSaveError">An error occurred while trying to save the movie file.</Message>
+		<Message ID="FileSaveError">An error occurred while trying to save the file.</Message>
 
 		<Message ID="ClearHistory">Esborra el registre</Message>
 		<Message ID="LastFolderUsed">Darrera carpeta utilitzada</Message>
@@ -733,6 +762,11 @@
 		<Message ID="MouseModeEnabled">Mouse mode enabled - press ESC or pause to release the cursor.</Message>
 		<Message ID="BandaiMicrophone">Bandai Microphone</Message>
 		<Message ID="DatachBarcodeReader">Datach Barcode Reader</Message>
+
+		<Message ID="HelpFullscreen">/fullscreen - Inicia Mesen en pantalla completa</Message>
+		<Message ID="HelpDoNotSaveSettings">/DoNotSaveSettings - Evita que els canvis es desin (útil per a evitar que les opcions de la línia d'ordres es converteixin en la configuració per defecte)</Message>
+		<Message ID="HelpRecordMovie">/RecordMovie="filename.mmo" - Start recording a movie after the specified game is loaded.</Message>
+		<Message ID="HelpLoadLastSession">/LoadLastSession - Resumes the game in the state it was left in when it was last played.</Message>
 
 		<Message ID="Resume">Continua</Message>
 		<Message ID="Pause">Pausa</Message>

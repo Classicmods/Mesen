@@ -90,6 +90,7 @@ private:
 	bool _running = false;
 	int32_t _stopCode = 0;
 
+	bool _pauseOnNextFrameRequested = false;
 	bool _resetRunTimers = false;
 
 	bool _disableOcNextFrame = false;
@@ -101,7 +102,9 @@ private:
 
 	void UpdateNesModel(bool sendNotification);
 	double GetFrameDelay();
-	void DisplayDebugInformation(Timer &clockTimer, Timer &lastFrameTimer, double &lastFrameMin, double &lastFrameMax, uint32_t lastPauseFrame);
+	void DisplayDebugInformation(double lastFrame, double &lastFrameMin, double &lastFrameMax, double frameDurations[60]);
+
+	void ExportStub();
 
 public:
 	Console(shared_ptr<Console> master = nullptr, EmulationSettings* initialSettings = nullptr);
@@ -161,6 +164,7 @@ public:
 		return std::dynamic_pointer_cast<T>(_systemActionManager);
 	}
 
+	uint32_t GetDipSwitchCount();
 	ConsoleFeatures GetAvailableFeatures();
 	void InputBarcode(uint64_t barcode, uint32_t digitCount);
 
@@ -168,6 +172,7 @@ public:
 	void StartRecordingTapeFile(string filepath);
 	void StopRecordingTapeFile();
 	bool IsRecordingTapeFile();
+	bool IsNsf();
 		
 	std::thread::id GetEmulationThreadId();
 
@@ -203,6 +208,7 @@ public:
 	bool IsExecutionStopped();
 
 	bool IsPaused();
+	void PauseOnNextFrame();
 
 	void SetNextFrameOverclockStatus(bool disabled);
 

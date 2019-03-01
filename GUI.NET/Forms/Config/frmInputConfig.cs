@@ -18,6 +18,7 @@ namespace Mesen.GUI.Forms.Config
 		public frmInputConfig()
 		{
 			InitializeComponent();
+			ThemeHelper.ExcludeFromTheme(pnlConflictWarning);
 
 			tlpControllers.Enabled = !InteropEmu.MoviePlaying() && !InteropEmu.MovieRecording();
 
@@ -43,6 +44,8 @@ namespace Mesen.GUI.Forms.Config
 			AddBinding("DisplayInputPort4", chkDisplayPort4);
 			AddBinding("DisplayInputPosition", cboDisplayInputPosition);
 			AddBinding("DisplayInputHorizontally", chkDisplayInputHorizontally);
+			AddBinding("ControllerDeadzoneSize", trkControllerDeadzoneSize);
+			AddBinding("HideMousePointerForZapper", chkHideMousePointerForZapper);
 
 			//Sort expansion port dropdown alphabetically, but keep the "None" option at the top
 			SortDropdown(cboExpansionPort, ResourceHelper.GetEnumText(InteropEmu.ExpansionPortDevice.None));
@@ -411,11 +414,18 @@ namespace Mesen.GUI.Forms.Config
 			if(frm.Height + point.Y > screen.Bottom) {
 				//Show on top instead
 				point.Y -= btn.Height + frm.Height;
+
+				if(point.Y < 0) {
+					point.Y = 0;
+				}
 			}
 
 			if(frm.Width + point.X > screen.Right) {
 				//Show on left instead
 				point.X -= frm.Width - btn.Width;
+				if(point.X < 0) {
+					point.X = 0;
+				}
 			}
 
 			frm.Text = title;

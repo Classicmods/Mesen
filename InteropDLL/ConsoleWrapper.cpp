@@ -250,6 +250,14 @@ namespace InteropEmu {
 			}
 		}
 
+		DllExport bool __stdcall HistoryViewerCreateSaveState(const char* outputFile, uint32_t position)
+		{
+			if(_historyConsole) {
+				return _historyConsole->GetHistoryViewer()->CreateSaveState(outputFile, position);
+			}
+			return false;
+		}
+
 		DllExport bool __stdcall HistoryViewerSaveMovie(const char* movieFile, uint32_t startPosition, uint32_t endPosition)
 		{
 			if(_historyConsole) {
@@ -310,6 +318,7 @@ namespace InteropEmu {
 		DllExport void __stdcall SetControllerType(uint32_t port, ControllerType type) { _settings->SetControllerType(port, type); }
 		DllExport void __stdcall SetControllerKeys(uint32_t port, KeyMappingSet mappings) { _settings->SetControllerKeys(port, mappings); }
 		DllExport void __stdcall SetZapperDetectionRadius(uint32_t detectionRadius) { _settings->SetZapperDetectionRadius(detectionRadius); }
+		DllExport void __stdcall SetControllerDeadzoneSize(uint32_t deadzoneSize) { _settings->SetControllerDeadzoneSize(deadzoneSize); }
 		DllExport void __stdcall SetExpansionDevice(ExpansionPortDevice device) { _settings->SetExpansionDevice(device); }
 		DllExport void __stdcall SetConsoleType(ConsoleType type) { _settings->SetConsoleType(type); }
 		DllExport void __stdcall SetMouseSensitivity(MouseDevice device, double sensitivity) { _settings->SetMouseSensitivity(device, sensitivity); }
@@ -491,8 +500,6 @@ namespace InteropEmu {
 
 			_console->Release(true);
 			_console.reset();
-
-			MessageManager::RegisterMessageManager(nullptr);
 			
 			_shortcutKeyHandler.reset();
 		}
@@ -629,6 +636,10 @@ namespace InteropEmu {
 		DllExport uint32_t __stdcall GetEmulationSpeed() { return _settings->GetEmulationSpeed(true); }
 		DllExport void __stdcall SetTurboRewindSpeed(uint32_t turboSpeed, uint32_t rewindSpeed) { _settings->SetTurboRewindSpeed(turboSpeed, rewindSpeed); }
 		DllExport void __stdcall SetRewindBufferSize(uint32_t seconds) { _settings->SetRewindBufferSize(seconds); }
+		DllExport bool __stdcall IsRewinding() {
+			shared_ptr<RewindManager> rewindManager = _console->GetRewindManager();
+			return rewindManager ? rewindManager->IsRewinding() : false;
+		}
 		DllExport void __stdcall SetOverclockRate(uint32_t overclockRate, bool adjustApu) { _settings->SetOverclockRate(overclockRate, adjustApu); }
 		DllExport void __stdcall SetPpuNmiConfig(uint32_t extraScanlinesBeforeNmi, uint32_t extraScanlinesAfterNmi) { _settings->SetPpuNmiConfig(extraScanlinesBeforeNmi, extraScanlinesAfterNmi); }
 		DllExport void __stdcall SetVideoScale(double scale, ConsoleId consoleId) { GetConsoleById(consoleId)->GetSettings()->SetVideoScale(scale); }
@@ -637,8 +648,8 @@ namespace InteropEmu {
 		DllExport void __stdcall SetVideoAspectRatio(VideoAspectRatio aspectRatio, double customRatio) { _settings->SetVideoAspectRatio(aspectRatio, customRatio); }
 		DllExport void __stdcall SetVideoFilter(VideoFilterType filter) { _settings->SetVideoFilterType(filter); }
 		DllExport void __stdcall SetVideoResizeFilter(VideoResizeFilter filter) { _settings->SetVideoResizeFilter(filter); }
-		DllExport void __stdcall GetRgbPalette(uint32_t *paletteBuffer) { _settings->GetRgbPalette(paletteBuffer); }
-		DllExport void __stdcall SetRgbPalette(uint32_t *paletteBuffer) { _settings->SetRgbPalette(paletteBuffer); }
+		DllExport void __stdcall GetRgbPalette(uint32_t *paletteBuffer) { _settings->GetUserRgbPalette(paletteBuffer); }
+		DllExport void __stdcall SetRgbPalette(uint32_t *paletteBuffer, uint32_t paletteSize) { _settings->SetUserRgbPalette(paletteBuffer, paletteSize); }
 		DllExport void __stdcall SetPictureSettings(double brightness, double contrast, double saturation, double hue, double scanlineIntensity) { _settings->SetPictureSettings(brightness, contrast, saturation, hue, scanlineIntensity); }
 		DllExport void __stdcall SetNtscFilterSettings(double artifacts, double bleed, double fringing, double gamma, double resolution, double sharpness, bool mergeFields, double yFilterLength, double iFilterLength, double qFilterLength, bool verticalBlend) { _settings->SetNtscFilterSettings(artifacts, bleed, fringing, gamma, resolution, sharpness, mergeFields, yFilterLength, iFilterLength, qFilterLength, verticalBlend, false); }
 		DllExport void __stdcall SetPauseScreenMessage(char* message) { _settings->SetPauseScreenMessage(message); }
@@ -666,21 +677,25 @@ namespace InteropEmu {
 		DllExport ConsoleFeatures __stdcall GetAvailableFeatures() { return _console->GetAvailableFeatures(); }
 
 		//NSF functions
-		DllExport bool __stdcall IsNsf() { return NsfMapper::GetInstance() != nullptr; }
+		DllExport bool __stdcall IsNsf() { return _console->IsNsf(); }
+		DllExport uint32_t __stdcall NsfGetFrameCount() { return _console->GetPpu()->GetFrameCount(); }
 		DllExport void __stdcall NsfSelectTrack(uint8_t trackNumber) {
-			if(NsfMapper::GetInstance()) {
-				NsfMapper::GetInstance()->SelectTrack(trackNumber);
+			NsfMapper* nsfMapper = dynamic_cast<NsfMapper*>(_console->GetMapper());
+			if(nsfMapper) {
+				nsfMapper->SelectTrack(trackNumber);
 			}
 		}
 		DllExport int32_t __stdcall NsfGetCurrentTrack() {
-			if(NsfMapper::GetInstance()) {
-				return NsfMapper::GetInstance()->GetCurrentTrack();
+			NsfMapper* nsfMapper = dynamic_cast<NsfMapper*>(_console->GetMapper());
+			if(nsfMapper) {
+				return nsfMapper->GetCurrentTrack();
 			}
 			return -1;
 		}
 		DllExport void __stdcall NsfGetHeader(NsfHeader* header) { 
-			if(NsfMapper::GetInstance()) {
-				*header = NsfMapper::GetInstance()->GetNsfHeader();
+			NsfMapper* nsfMapper = dynamic_cast<NsfMapper*>(_console->GetMapper());
+			if(nsfMapper) {
+				*header = nsfMapper->GetNsfHeader();
 			}
 		}
 		DllExport void __stdcall NsfSetNsfConfig(int32_t autoDetectSilenceDelay, int32_t moveToNextTrackTime, bool disableApuIrqs) {
@@ -734,6 +749,8 @@ namespace InteropEmu {
 				sam->InsertCoin(port);
 			}
 		}
+
+		DllExport uint32_t __stdcall GetDipSwitchCount() { return _console->GetDipSwitchCount(); }
 
 		DllExport void __stdcall SetDipSwitches(uint32_t dipSwitches)
 		{

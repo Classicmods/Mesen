@@ -110,6 +110,7 @@ else ifeq ($(platform), classic_armv7_a7)
 	    LDFLAGS += -static-libgcc -static-libstdc++
 	  endif
 	endif
+<<<<<<< HEAD
 
 # (armv8 a35, hard point, neon based) ###
 # Playstation Classic
@@ -141,6 +142,8 @@ else ifeq ($(platform), classic_armv8_a35)
 	    LDFLAGS += -static-libgcc -static-libstdc++
 	  endif
 	endif
+=======
+>>>>>>> f5bee853c77bd70e729682a7655e0900189dd022
 #######################################
 
 else ifneq (,$(findstring osx,$(platform)))

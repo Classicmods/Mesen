@@ -14,13 +14,11 @@ class MemoryManager : public Snapshotable
 	private:
 		static constexpr int RAMSize = 0x10000;
 		static constexpr int VRAMSize = 0x4000;
-		static constexpr int NameTableScreenSize = 0x400;
 		
 		shared_ptr<Console> _console;
 		shared_ptr<BaseMapper> _mapper;
 
 		uint8_t *_internalRAM;
-		uint8_t *_nametableRAM[2];
 
 		OpenBusHandler _openBusHandler;
 		InternalRamHandler<0x7FF> _internalRamHandler;
@@ -51,7 +49,7 @@ class MemoryManager : public Snapshotable
 		uint8_t* GetInternalRAM();
 
 		uint8_t Read(uint16_t addr, MemoryOperationType operationType = MemoryOperationType::Read);
-		void Write(uint16_t addr, uint8_t value);
+		void Write(uint16_t addr, uint8_t value, MemoryOperationType operationType);
 
 		uint32_t ToAbsolutePrgAddress(uint16_t ramAddr);
 

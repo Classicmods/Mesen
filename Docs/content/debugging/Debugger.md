@@ -19,6 +19,20 @@ Most elements in the debugger's interface have right-click menu options - make s
 Watch expressions, breakpoints and labels are automatically saved on a per-rom basis in a **Workspace**.  
 You can completely reset the workspace for a specific rom by using the **<kbd>File&rarr;Workspace&rarr;Reset Workspace</kbd>** command.
 
+## Search Tools ##
+
+There are a number of different tools that can be used to search/navigate the code:
+
+<div class="imgBox"><div>
+	<img src="/images/GoToAll.png" />
+	<span>Go To All</span>
+</div></div>
+
+* **Go To All**: The *Go To All* feature allows you to search for any label by its name and navigate to it. It also works with CA/CC65 and displays the location of the labels in the original source code. (**<kbd>Ctrl+,</kbd>**)
+* **Find/Find Next/Find Previous**: Incremental search that can be used to search through any text shown in the code window (**<kbd>Ctrl+F</kbd>**)
+* **Find All Occurrences**: Search the code for a specific string or label and return all the results in a list. (**<kbd>Ctrl+Shift+F</kbd>**)
+* **Go To...**: These options allow you to quickly reach the NMI, IRQ or Reset handlers or a specific address (**<kbd>Ctrl+G</kbd>**)
+
 
 ## Customizing the debugger ##
 
@@ -57,9 +71,9 @@ The code window displays the disassembled code and contains a number of features
 
 **Show...**:
 
-* **Disassembled Code**: (Always enabled) Any portions of the CPU memory that has been disassembled (based on the previous options) will be shown in the code window.
-* **Verified Data**: Verified data blocks will be shown (every byte of the block will be shown in the code window).  Note: this has no effect if verified code is disassembled based on the previous options.
-* **Unidentified Code/Data**: Blocks of bytes that are not marked as data nor code will be shown (every byte of the block will be shown in the code window).  Note: this has no effect if unidentified blocks are disassembled based on the previous options.
+* **Verified Code**: (Always enabled) All verified code will be disassembled and shown in the code window.
+* **Verified Data**: Verified data blocks will be shown. If the option to disassemble verified data is enabled, a disassembly of the data will be shown.
+* **Unidentified Code/Data**: Blocks that are not marked as data nor code will be shown. If the option to disassemble unidentified data/code is enabled, a disassembly of the bytes will be shown.
 
 **Display OP codes in lower case**: When enabled, OP codes are displayed in lowercase letters
 
@@ -91,42 +105,89 @@ While execution is paused, most fields are editable. Altering the value of any f
 This section lets you force certain buttons to be held down on the NES' controller. This is often useful when trying to debug input-related code.  
 Clicking on a button on the mini NES controllers will toggle its state - green buttons are currently being held down.
 
-## Watch Window ##
+## Watch List/Window ##
 
 <div class="imgBox"><div>
-	<img src="/images/WatchList.png" />
+	<img src="/images/WatchWindow.png" />
 	<span>Watch Window</span>
 </div></div>
 
-The watch window allows you to evaluate expression and see their value. Mesen supports complex expressions in C/C++ style syntax.
+<div class="imgBox" style="margin-top: 10px"><div>
+	<img src="/images/WatchList.png" />
+	<span>Watch List</span>
+</div></div>
 
-**To add a new watch expression**, click on the last empty line in the list and start typing.  
-**To edit a watch expression**, double-click on it and start typing.    
-**To switch between hex and decimal**, right-click in the watch and toggle the **Hexadecimal Display** option.
+The watch window and watch list allow you to evaluate expression and see their value. The `Watch Window` is a standalone window that can be resized and moved independently from everything else, whereas the `Watch List` is a part of the main debugger window for quick access to watch expressions.
+
+**To add a new watch expression**, click on the last empty line in the list to enter edit mode.  
+**To edit a watch expression**, double-click on it to enter edit mode.  
+
+You can use the right-click context menu to delete or move entries, as well as select formatting options.  
+An import and export feature is also available to save/load watch expressions from a plain text file.
 
 ### Syntax ###
 
-The used syntax is identical to C/C++ syntax (e.g && for and, || for or, etc.) and should have the same operator precedence as C/C++.
+The syntax is identical to C/C++ (e.g `&&` for AND, `||` for OR) and uses the same operator precedence as well.
 
-**Note:** Use the $ prefix to denote hexadecimal values.
+{{% notice tip %}}
+Use the $ prefix to denote hexadecimal values (e.g: `$FF`) or the % prefix for binary values (e.g: `%1101`)
+{{% /notice  %}}
 
-**Special values**
-```text
-A/X/Y/PS/SP: Value of corresponding registers
-PC: Program Counter
-OpPC: Address of the current instruction's first byte
-Irq/Nmi: True if the Irq/Nmi flags are set
-Cycle/Scanline: Current cycle (0-340)/scanline(-1 to 260) of the PPU
-Frame: PPU frame number (since power on/reset)
-Value: Current value being read/written from/to memory
-IsRead: True if the CPU is reading from a memory address
-IsWrite: True if the CPU is writing to a memory address
-Address: Current CPU memory address being read/written
-RomAddress: Current ROM address being read/written
-[<address>]: (Byte) Memory value at <address> (CPU)
-{<address>}: (Word) Memory value at <address> (CPU)
-```
-**Examples**
+#### Special values ####
+
+The following "variables" can be used in both the watch window and contional breakpoints to check the state of specific portions of the emulation core.
+
+**Numeric values**
+
+* **A/X/Y/PS/SP**: Value of corresponding registers
+* **PC**: Program Counter
+* **OpPC**: Address of the current instruction's first byte
+* **PreviousOpPC**: Address of the previous instruction's first byte
+* **Cycle/Scanline**: Current cycle (0-340)/scanline(-1 to 260) of the PPU
+* **Frame**: PPU frame number (since power on/reset)
+* **Value**: Current value being read/written from/to memory
+* **Address**: Current CPU memory address being read/written
+* **RomAddress**: Current ROM address being read/written
+* **[&lt;address&gt;]**: (Byte) Memory value at &lt;address&gt; (CPU)
+* **{&lt;address&gt;}**: (Word) Memory value at &lt;address&gt; (CPU)
+
+**Flags**
+
+* **Branched**: true if the current instruction was reached by a branch/jump instruction
+* **IsRead**: true if the CPU is reading from a memory address
+* **IsWrite**: true if the CPU is writing to a memory address  
+* **IRQ**: true if the IRQ flag is set
+* **NMI**: true if the NMI flag is set
+* **Sprite0Hit**: true if the PPU's "Sprite 0 Hit" flag is set
+* **SpriteOverflow**: true if the PPU's "Sprite Overflow" flag is set
+* **VerticalBlank**: true if the PPU's "Vertical Blank" flag is set
+
+#### Formatting ####
+
+It is possible to customize the format of each entry by adding a suffix to the expression.
+Suffixes contain a single letter and are optionally followed by a number indicating the number of bytes expected in the return value (up to 4).
+
+The available suffixes are:
+
+* `S` - Signed decimal value
+* `U` - Unsigned decimal value
+* `H` - Hexadecimal
+* `B` - Binary
+
+For example, suffixing an expression with:
+
+* `, H2` will display the result as a 2-byte hexadecimal value (e.g: `26, H2` will display as `$001A`)
+* `, B` will display the result as a binary value (e.g: `141,B` will display as `%10001101`)
+* `, S2` will display the result as a 16-bit signed decimal value (e.g: `$FE4F, S2` will display as `-433`)
+* `, U` will display the result as an unsigned decimal value (e.g: `180, U` will display as `180`)
+
+You can select the default format to use for entries without prefixes by right-clicking and choosing between:
+
+* **Decimal Display** (equivalent to `S4` to all entries - displays the result as 32-bit signed decimal values)
+* **Hexadecimal Display** (equivalent to `H1` to all entries)
+* **Binary Display** (equivalent to `B1` to all entries)
+  
+#### Usage Examples ####
 ```
 [$10] //Displays the value of memory at address $10 (CPU)
 a == 10 || x == $23
@@ -134,6 +195,7 @@ scanline == 10 && (cycle >= 55 && cycle <= 100)
 x == [$150] || y == [10]
 [[$15] + y]   //Reads the value at address $15, adds Y to it and reads the value at the resulting address.
 {$FFFA}  //Returns the NMI handler's address.
+[$14] | ([$15] << 8), H2  //Display the value of the 2-byte variable stored at $14 in hexadecimal format.
 ```
 
 **Using labels**
@@ -185,7 +247,10 @@ Select which address or address range this breakpoint should apply to.
 It is also possible to specify no address at all by selecting **Any** - in this case, breakpoints will be evaluated on every CPU cycle.  
 
 **Condition** (optional)  
-Conditions allow you to use the same expression syntax as the one used in the [Watch Window](#watch-window) to cause a breakpoint to trigger under very specific conditions.
+Conditions allow you to use the same expression syntax as the one used in the [Watch Window](#watch-window) to cause a breakpoint to trigger under specific conditions.
+
+**Process breakpoint on dummy reads/writes**  
+When enabled, the breakpoint will be processed for dummy reads and writes (only available for read or write breakpoints). When disabled, the debugger will never break on a dummy read or write for this breakpoint.
 
 **Mark on Event Viewer**  
 When enabled, a mark will be visible on the [Event Viewer](/debugging/eventviewer.html) whenever this breakpoint's conditions are met. This can be used to add marks to the event viewer based on a variety of conditions by using conditional breakpoints.
@@ -266,7 +331,9 @@ Various types of labels can be defined:
 - **Register**: These are used to give name to built-in or mapper-specific registers.  For example, the $2000 PPU register could be renamed to "PpuControl". 
    
 There are some restrictions on what a label can contain -- in general, they must begin with a letter or an underscore and cannot contain spaces or most non-alphanumeric characters.
-Every type of label can also contain a comment.  Comments are shown in the code window as well as in the tooltips that are displayed when putting your cursor over a label in the code window. 
+Labels can also contain a comment which is shown in the code window as well as in the tooltips that are displayed when putting your cursor over a label in the code window. 
+
+Multi-byte labels can be defined using the `Length` setting. This can be used to define multi-byte values, arrays or pointers in the code. Multi-byte labels will be shown with a +X offset modifier when referred to in the code window (e.g: `MyArrayLabel+2`)
 
 ## Function List ##
 
@@ -321,6 +388,8 @@ The `Break Options` submenu contains a number of options to configure under whic
 * **Break on Init (NSF)**: Break when the NSF's Init routine is called.
 * **Break on Play (NSF)**: Break when the NSF's Play routine is called.
 
+**Enable sub-instruction breakpoints**: This option allow Mesen to process breakpoints in the middle of CPU instructions.  This was the default up to version 0.9.7.  When this option is disabled, the debugger will break at the beginning of CPU instructions only (and will only break once per instruction). This is the new default as of 0.9.8.
+
 Additionally, you can configure whether or not the debugger window gets focused when a break or pause occurs.
 
 ### Copy Options ###
@@ -339,11 +408,14 @@ These options configure which portions of the code is copied into the clipboard 
 <div></div>
 
 * **Hide Pause Icon**: When enabled, the pause icon that is normally shown whenever execution is paused will be hidden.
+* **Draw Partial Frame**: When enabled, the emulator's main window will display the current partially-drawn frame instead of the last complete frame.
+* **Show previous frame behind current**: When enabled along with `Draw Partial Frame`, the previous frame's data will be shown behind the current frame.
 
 <div></div>
 
-* **Draw Partial Frame**: When enabled, the emulator's main window will display the current partially-drawn frame instead of the last complete frame.
-* **Show previous frame behind current**: When enabled along with `Draw Partial Frame`, the previous frame's data will be shown behind the current frame.
+* **Show break notifications**: When enabled, a "notification" will be shown over the disassembly window indicating what caused the debugger to break the execution (e.g: a CPU/PPU read/write, a decayed OAM read, etc.)
+* **Show instruction progression**: When enabled, the code window will display an indicator showing how far along into the current instruction the execution is. This also shows an estimate of how many cycles the instruction will take to complete (this estimate may increase for various reasons such as a page being crossed, etc.)
+* **Show selection length**: When enabled, the code window will display the current selection's length in bytes (when more than 1 line is selected)
 
 <div></div>
 
@@ -352,6 +424,26 @@ These options configure which portions of the code is copied into the clipboard 
 <div></div>
 
 * **Refresh UI while running**: When enabled, the watch window and the CPU/PPU status will be updated continuously while the emulation is running (instead of only updating when the execution breaks)
+
+## Workspaces ##
+
+Debugger "workspaces" are used to store information specific to each ROM you debug. This includes watch expressions, breakpoints and labels.
+
+### Default Workspace Labels ###
+
+By default, Mesen setups labels for the NES' PPU and APU registers. These can be enabling the `Disable default labels` option.  
+  
+Additionally, it's possible to setup your own set of default labels by creating a file called `DefaultLabels.Global.mlb` in the `Debugger` folder (where the workspace and CDL files are stored). When Mesen finds this file, it will ignore the its own default labels and use the ones contained in that file instead, for all ROMs.  
+
+You can also setup default labels for specific mappers by creating a file called `DefaultLabels.[mapper number].mlb` (e.g, for MMC3 games: `DefaultLabels.4.mlb`).  
+For FDS and NSF ROMs, `DefaultLabels.FDS.mlb` and `DefaultLabels.NSF.mlb` can be used, respectively.  
+
+If both a global and mapper-specific `mlb` is found, both of them will be used (with the mapper-specific file having priority in case of conflicting labels).
+
+{{% notice tip %}}
+`.mlb` files are a Mesen-specific file format to define labels/comments in the code. They are written in a simple text format and can also be created by using the debugger's `Export Labels` feature.
+{{% /notice %}}
+
 
 ## How To: Edit Code ##
 

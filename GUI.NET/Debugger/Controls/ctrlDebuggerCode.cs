@@ -10,6 +10,7 @@ using System.Windows.Forms;
 using Mesen.GUI.Debugger.Controls;
 using Mesen.GUI.Config;
 using Mesen.GUI.Controls;
+using System.Text.RegularExpressions;
 
 namespace Mesen.GUI.Debugger
 {
@@ -38,7 +39,15 @@ namespace Mesen.GUI.Debugger
 
 				ctrlFindOccurrences.Viewer = this;
 				splitContainer.Panel2Collapsed = true;
+
+				this.SymbolProvider = DebugWorkspaceManager.SymbolProvider;
+				DebugWorkspaceManager.SymbolProviderChanged += UpdateSymbolProvider;
 			}
+		}
+
+		private void UpdateSymbolProvider(Ld65DbgImporter symbolProvider)
+		{
+			this.SymbolProvider = symbolProvider;
 		}
 
 		public void SetConfig(DebugViewInfo config, bool disableActions = false)
@@ -51,6 +60,11 @@ namespace Mesen.GUI.Debugger
 			if(this.ctrlCodeViewer.TextZoom != config.TextZoom) {
 				this.ctrlCodeViewer.TextZoom = config.TextZoom;
 			}
+		}
+
+		public void SetMessage(TextboxMessageInfo message)
+		{
+			this.ctrlCodeViewer.SetMessage(message);
 		}
 
 		protected override ctrlScrollableTextbox ScrollableTextbox
@@ -218,11 +232,6 @@ namespace Mesen.GUI.Debugger
 			}
 		}
 		
-		private void ctrlCodeViewer_MouseLeave(object sender, EventArgs e)
-		{
-			_tooltipManager.Close();
-		}
-		
 		private Breakpoint GetCurrentLineBreakpoint()
 		{
 			AddressTypeInfo addressInfo = GetAddressInfo(ctrlCodeViewer.SelectedLine);
@@ -236,17 +245,21 @@ namespace Mesen.GUI.Debugger
 		private void ctrlCodeViewer_MouseMove(object sender, MouseEventArgs e)
 		{
 			if(e.Location.X < this.ctrlCodeViewer.CodeMargin / 4) {
-				this.ctrlCodeViewer.ContextMenuStrip = contextMenuMargin;
+				if(this.ctrlCodeViewer.ContextMenuStrip != contextMenuMargin) {
+					this.ctrlCodeViewer.ContextMenuStrip = contextMenuMargin;
+					ThemeHelper.FixMonoColors(contextMenuMargin);
+				}
 			} else {
-				this.ctrlCodeViewer.ContextMenuStrip = _codeViewerActions.contextMenu;
+				if(this.ctrlCodeViewer.ContextMenuStrip != _codeViewerActions.contextMenu) {
+					this.ctrlCodeViewer.ContextMenuStrip = _codeViewerActions.contextMenu;
+					ThemeHelper.FixMonoColors(this.ctrlCodeViewer.ContextMenuStrip);
+				}
 			}
-
-			_tooltipManager.ProcessMouseMove(e.Location);
 		}
 
 		protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
 		{
-			_codeViewerActions.UpdateContextMenuItemVisibility();
+			_codeViewerActions.UpdateContextMenuItemVisibility(_codeViewerActions.contextMenu.Items);
 			return base.ProcessCmdKey(ref msg, keyData);
 		}
 		
@@ -257,12 +270,8 @@ namespace Mesen.GUI.Debugger
 
 		private void ctrlCodeViewer_MouseDown(object sender, MouseEventArgs e)
 		{
-			_tooltipManager.Close();
-
 			if(e.Button == MouseButtons.Left && e.Location.X < this.ctrlCodeViewer.CodeMargin / 4) {
-				int relativeAddress = ctrlCodeViewer.GetLineNumberAtPosition(e.Y);
-				AddressTypeInfo info = GetAddressInfo(ctrlCodeViewer.GetLineIndexAtPosition(e.Y));
-				BreakpointManager.ToggleBreakpoint(relativeAddress, info, false);
+				_codeViewerActions.ToggleBreakpoint(false);
 			}
 		}
 
@@ -285,12 +294,7 @@ namespace Mesen.GUI.Debugger
 				}
 			}
 		}
-
-		private void ctrlCodeViewer_ScrollPositionChanged(object sender, EventArgs e)
-		{
-			_tooltipManager?.Close();
-		}
-
+		
 		private void ctrlCodeViewer_MouseDoubleClick(object sender, MouseEventArgs e)
 		{
 			if(e.Location.X > this.ctrlCodeViewer.CodeMargin / 2 && e.Location.X < this.ctrlCodeViewer.CodeMargin) {
@@ -356,9 +360,56 @@ namespace Mesen.GUI.Debugger
 			}
 		}
 
+		public void EditSourceFile()
+		{
+			//TODO: Not supported yet
+		}
+
+		public void FindAllOccurrences(Ld65DbgImporter.SymbolInfo symbol)
+		{
+			FindAllOccurrences(symbol.Name, true, true);
+		}
+
 		public void FindAllOccurrences(string text, bool matchWholeWord, bool matchCase)
 		{
-			ctrlFindOccurrences.FindAllOccurrences(text, matchWholeWord, matchCase);
+			List<FindAllOccurrenceResult> results = new List<FindAllOccurrenceResult>();
+
+			string regexPattern;
+			if(matchWholeWord) {
+				regexPattern = $"([^0-9a-zA-Z_#@]+|^){Regex.Escape(text)}([^0-9a-zA-Z_#@]+|$)";
+			} else {
+				regexPattern = Regex.Escape(text);
+			}
+
+			Regex regex = new Regex(regexPattern, matchCase ? RegexOptions.None : RegexOptions.IgnoreCase);
+
+			for(int i = 0, len = ctrlCodeViewer.LineCount; i < len; i++) {
+				string line = ctrlCodeViewer.GetLineContent(i);
+				if(regex.IsMatch(line)) {
+					if(line.StartsWith("__") && line.EndsWith("__")) {
+						line = "Function: " + line.Substring(2, line.Length - 4);
+					}
+					if(line.StartsWith("--") && line.EndsWith("--")) {
+						continue;
+					}
+
+					int j = i;
+					while(j < ctrlCodeViewer.LineCount && ctrlCodeViewer.GetLineNumber(j) < 0) {
+						j++;
+					}
+
+					int cpuAddress = ctrlCodeViewer.GetLineNumber(j);
+					results.Add(new FindAllOccurrenceResult() {
+						MatchedLine = line,
+						Location = "$" + cpuAddress.ToString("X4"),
+						Destination = new GoToDestination() {
+							CpuAddress = cpuAddress
+						}
+					});
+				}
+			}
+
+			ctrlFindOccurrences.FindAllOccurrences(text, results);
 			this.splitContainer.Panel2Collapsed = false;
 		}
 
@@ -387,6 +438,31 @@ namespace Mesen.GUI.Debugger
 				return null;
 			}
 
+			public static void ConfigureActiveStatement(LineProperties props)
+			{
+				props.FgColor = Color.Black;
+				props.TextBgColor = ConfigManager.Config.DebugInfo.CodeActiveStatementColor;
+				props.Symbol |= LineSymbol.Arrow;
+
+				if(ConfigManager.Config.DebugInfo.ShowInstructionProgression) {
+					InstructionProgress state = new InstructionProgress();
+					InteropEmu.DebugGetInstructionProgress(ref state);
+
+					LineProgress progress = new LineProgress();
+					progress.Current = (int)state.OpCycle;
+					progress.Maxixum = frmOpCodeTooltip.OpCycles[state.OpCode];
+					switch(state.OpMemoryOperationType) {
+						case InteropMemoryOperationType.DmcRead: progress.Color = Color.FromArgb(255, 160, 221); progress.Text = "DMC"; break;
+						case InteropMemoryOperationType.DummyRead: progress.Color = Color.FromArgb(184, 160, 255); progress.Text = "DR"; break;
+						case InteropMemoryOperationType.DummyWrite: progress.Color = Color.FromArgb(255, 245, 137); progress.Text = "DW"; break;
+						case InteropMemoryOperationType.Read: progress.Color = Color.FromArgb(150, 176, 255); progress.Text = "R"; break;
+						case InteropMemoryOperationType.Write: progress.Color = Color.FromArgb(255, 171, 150); progress.Text = "W"; break;
+						default: progress.Color = Color.FromArgb(143, 255, 173); progress.Text = "X"; break;
+					}
+					props.Progress = progress;
+				}
+			}
+
 			public LineProperties GetLineStyle(int cpuAddress, int lineNumber)
 			{
 				DebugInfo info = ConfigManager.Config.DebugInfo;
@@ -396,9 +472,7 @@ namespace Mesen.GUI.Debugger
 
 				bool isActiveStatement = _code._currentActiveAddress.HasValue && _code.ctrlCodeViewer.GetLineIndex((int)_code._currentActiveAddress.Value) == lineNumber;
 				if(isActiveStatement) {
-					props.FgColor = Color.Black;
-					props.TextBgColor = info.CodeActiveStatementColor;
-					props.Symbol |= LineSymbol.Arrow;
+					ConfigureActiveStatement(props);
 				} else if(_code._code.UnexecutedAddresses.Contains(lineNumber)) {
 					props.LineBgColor = info.CodeUnexecutedCodeColor;
 				} else if(_code._code.SpeculativeCodeAddreses.Contains(lineNumber)) {

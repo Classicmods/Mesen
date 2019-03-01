@@ -26,9 +26,11 @@ class CodeRunner;
 class BaseMapper;
 class ScriptHost;
 class TraceLogger;
+class PerformanceTracker;
 class Breakpoint;
 class CodeDataLogger;
 class ExpressionEvaluator;
+class DummyCpu;
 struct ExpressionData;
 
 enum EvalResultType : int32_t;
@@ -37,7 +39,7 @@ enum class CdlStripFlag;
 class Debugger
 {
 private:
-	static constexpr int BreakpointTypeCount = 6;
+	static constexpr int BreakpointTypeCount = 8;
 
 	//Must be static to be thread-safe when switching game
 	static string _disassemblerOutput;
@@ -50,6 +52,7 @@ private:
 	shared_ptr<LabelManager> _labelManager;
 	shared_ptr<TraceLogger> _traceLogger;
 	shared_ptr<Profiler> _profiler;
+	shared_ptr<PerformanceTracker> _performanceTracker;
 	unique_ptr<CodeRunner> _codeRunner;
 
 	shared_ptr<Console> _console;
@@ -58,6 +61,10 @@ private:
 	shared_ptr<APU> _apu;
 	shared_ptr<MemoryManager> _memoryManager;
 	shared_ptr<BaseMapper> _mapper;
+	
+	shared_ptr<DummyCpu> _dummyCpu;
+	bool _bpDummyCpuRequired;
+	bool _breakOnFirstCycle;
 
 	bool _hasScript;
 	SimpleLock _scriptLock;
@@ -73,6 +80,9 @@ private:
 	bool _hasBreakpoint[BreakpointTypeCount] = {};
 
 	vector<uint8_t> _frozenAddresses;
+
+	uint32_t _opCodeCycle;
+	MemoryOperationType _memoryOperationType;
 
 	deque<StackFrameInfo> _callstack;
 	deque<int32_t> _subReturnAddresses;
@@ -102,7 +112,11 @@ private:
 	atomic<uint8_t> _lastInstruction;
 	atomic<bool> _stepOut;
 	atomic<int32_t> _stepOverAddr;
+	BreakSource _breakSource;
 	
+	atomic<bool> _released;
+	SimpleLock _releaseLock;
+
 	bool _enableBreakOnUninitRead;
 	
 	atomic<bool> _breakRequested;
@@ -131,21 +145,25 @@ private:
 	vector<vector<int>> _debugEventMarkerRpn;
 
 private:
-	void ProcessBreakpoints(BreakpointType type, OperationInfo &operationInfo, bool allowBreak = true);
+	bool ProcessBreakpoints(BreakpointType type, OperationInfo &operationInfo, bool allowBreak = true, bool allowMark = true);
+	void ProcessAllBreakpoints(OperationInfo &operationInfo);
 	
 	void AddCallstackFrame(uint16_t source, uint16_t target, StackFrameFlags flags);
 	void UpdateCallstack(uint8_t currentInstruction, uint32_t addr);
 
 	void ProcessStepConditions(uint16_t addr);
-	bool SleepUntilResume(BreakSource source = BreakSource::Break);
+	bool SleepUntilResume(BreakSource source, uint32_t breakpointId = 0, BreakpointType bpType = BreakpointType::Global, uint16_t bpAddress = 0, uint8_t bpValue = 0, MemoryOperationType bpMemOpType = MemoryOperationType::Read);
 
 	void AddDebugEvent(DebugEventType type, uint16_t address = -1, uint8_t value = 0, int16_t breakpointId = -1, int8_t ppuLatch = -1);
 
 	void UpdatePpuCyclesToProcess();
+	void ResetStepState();
 
 public:
 	Debugger(shared_ptr<Console> console, shared_ptr<CPU> cpu, shared_ptr<PPU> ppu, shared_ptr<APU> apu, shared_ptr<MemoryManager> memoryManager, shared_ptr<BaseMapper> mapper);
 	~Debugger();
+
+	void ReleaseDebugger(bool needPause);
 
 	void SetPpu(shared_ptr<PPU> ppu);
 	Console* GetConsole();
@@ -154,7 +172,7 @@ public:
 	bool CheckFlag(DebuggerFlags flag);
 	
 	void SetBreakpoints(Breakpoint breakpoints[], uint32_t length);
-	
+
 	shared_ptr<LabelManager> GetLabelManager();
 
 	void GetFunctionEntryPoints(int32_t* entryPoints, int32_t maxCount);
@@ -162,6 +180,7 @@ public:
 
 	void GetCallstack(StackFrameInfo* callstackArray, uint32_t &callstackSize);
 	
+	void GetInstructionProgress(InstructionProgress &state);
 	void GetApuState(ApuState *state);
 	__forceinline void GetState(DebugState *state, bool includeMapperInfo = true);
 	void SetState(DebugState state);
@@ -173,14 +192,14 @@ public:
 	void ResumeFromBreak();
 
 	void PpuStep(uint32_t count = 1);
-	void Step(uint32_t count = 1);
+	void Step(uint32_t count = 1, BreakSource source = BreakSource::CpuStep);
 	void StepCycles(uint32_t cycleCount = 1);
 	void StepOver();
 	void StepOut();
 	void StepBack();
 	void Run();
 
-	void BreakImmediately();	
+	void BreakImmediately(BreakSource source);
 	void BreakOnScanline(int16_t scanline);
 
 	bool LoadCdlFile(string cdlFilepath);
@@ -204,12 +223,10 @@ public:
 	void GenerateCodeOutput();
 	const char* GetCode(uint32_t &length);
 
-	void GetJumpTargets(bool* jumpTargets);
-	
 	int32_t GetRelativeAddress(uint32_t addr, AddressType type);
+	int32_t GetRelativePpuAddress(uint32_t addr, PpuAddressType type);
 	int32_t GetAbsoluteAddress(uint32_t addr);	
 	int32_t GetAbsoluteChrAddress(uint32_t addr);
-	int32_t GetRelativeChrAddress(uint32_t addr);
 	
 	void GetAbsoluteAddressAndType(uint32_t relativeAddr, AddressTypeInfo* info);
 	void GetPpuAbsoluteAddressAndType(uint32_t relativeAddr, PpuAddressTypeInfo* info);
@@ -219,9 +236,11 @@ public:
 	shared_ptr<TraceLogger> GetTraceLogger();
 	shared_ptr<MemoryDumper> GetMemoryDumper();
 	shared_ptr<MemoryAccessCounter> GetMemoryAccessCounter();
+	shared_ptr<PerformanceTracker> GetPerformanceTracker();
 
 	int32_t EvaluateExpression(string expression, EvalResultType &resultType, bool useCache);
 	
+	bool IsPpuCycleToProcess();
 	void ProcessPpuCycle();
 	bool ProcessRamOperation(MemoryOperationType type, uint16_t &addr, uint8_t &value);
 	void ProcessVramReadOperation(MemoryOperationType type, uint16_t addr, uint8_t &value);

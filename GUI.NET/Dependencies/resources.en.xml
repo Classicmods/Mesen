@@ -43,6 +43,8 @@
 			<Control ID="mnuScale2x">2x</Control>
 			<Control ID="mnuScale3x">3x</Control>
 			<Control ID="mnuScale4x">4x</Control>
+			<Control ID="mnuScale5x">5x</Control>
+			<Control ID="mnuScale6x">6x</Control>
 			<Control ID="mnuFullscreen">Fullscreen</Control>
 			<Control ID="mnuVideoFilter">Video Filter</Control>
 			<Control ID="mnuNoneFilter">None</Control>
@@ -115,6 +117,7 @@
 			<Control ID="lblSoundChips">Sound Chips:</Control>
 			<Control ID="lblRecording">REC</Control>
 			<Control ID="lblSlowMotion">Slow Motion</Control>
+			<Control ID="lblRewinding">Rewinding</Control>
 			<Control ID="lblFastForward">Fast Forward</Control>
 		</Form>
 		<Form ID="frmLogWindow" Title="Log Window">
@@ -218,6 +221,12 @@
 			<Control ID="lblDisplayPosition">Display Position:</Control>
 			<Control ID="chkDisplayInputHorizontally">Display horizontally</Control>
 
+			<Control ID="lblSmall">Small</Control>
+			<Control ID="lblLarge">Large</Control>
+			<Control ID="lblDeadzone">Controller axis deadzone size:</Control>
+
+			<Control ID="chkHideMousePointerForZapper">Hide mouse pointer when using zapper</Control>
+
 			<Control ID="lblKeyBinding">Warning: Your current configuration contains conflicting key bindings - some physical buttons on your keyboard or gamepad are mapped to multiple buttons on the NES controller. If this is not intentional, please review and correct your key bindings.</Control>
 		</Form>
 		<Form ID="frmVideoConfig" Title="Video Options">
@@ -280,6 +289,8 @@
 
 			<Control ID="tpgAdvanced">Advanced</Control>
 			<Control ID="lblScreenRotation">Screen Rotation:</Control>
+			<Control ID="chkRemoveSpriteLimit">Remove sprite limit (Reduces flashing)</Control>
+			<Control ID="chkAdaptiveSpriteLimit">Automatically re-enable sprite limit as needed to prevent graphical glitches when possible</Control>
 			<Control ID="chkDisableBackground">Disable background</Control>
 			<Control ID="chkDisableSprites">Disable sprites</Control>
 			<Control ID="chkForceBackgroundFirstColumn">Force background display in first column</Control>
@@ -298,10 +309,10 @@
 			<Control ID="lblRewindSpeed">Rewind Speed:</Control>
 
 			<Control ID="tpgAdvanced">Advanced</Control>
+			<Control ID="lblDeveloperSettings">Recommended settings for developers (homebrew / ROM hacking)</Control>
+			<Control ID="lblMiscSettings">Miscellaneous Settings</Control>
 			<Control ID="chkUseAlternativeMmc3Irq">Use alternative MMC3 IRQ behavior</Control>
 			<Control ID="chkAllowInvalidInput">Allow invalid input (e.g Down + Up or Left + Right at the same time)</Control>
-			<Control ID="chkRemoveSpriteLimit">Remove sprite limit (Reduces flashing)</Control>
-			<Control ID="chkAdaptiveSpriteLimit">Automatically re-enable sprite limit as needed to prevent graphical glitches when possible</Control>
 			<Control ID="chkEnableOamDecay">Enable OAM RAM decay</Control>
 			<Control ID="chkDisablePpu2004Reads">Disable PPU $2004 reads (Famicom behavior)</Control>
 			<Control ID="chkDisableOamAddrBug">Disable PPU OAMADDR bug emulation</Control>
@@ -342,7 +353,7 @@
 			<Control ID="chkDeveloperMode">Enable developer mode</Control>
 
 			<Control ID="lblPauseBackgroundSettings">Pause/Background Settings</Control>
-			<Control ID="lblMiscSettings">Misc. Settings</Control>
+			<Control ID="lblMiscSettings">Miscellaneous Settings</Control>
 			<Control ID="chkAutoHideMenu">Automatically hide menu bar</Control>
 			<Control ID="chkDisplayTitleBarInfo">Display additional information in title bar</Control>
 
@@ -545,7 +556,7 @@
 		</Form>
 		<Form ID="frmAbout" Title="About - Mesen">
 			<Control ID="labelProductName">Mesen</Control>
-			<Control ID="labelCopyright">© 2018 M. Bibaud (aka Sour)</Control>
+			<Control ID="labelCopyright">© 2019 M. Bibaud (aka Sour)</Control>
 			<Control ID="lblWebsite">Website:</Control>
 			<Control ID="lblLink">www.mesen.ca</Control>
 			<Control ID="labelVersion">Version:</Control>
@@ -608,8 +619,24 @@
 			<Control ID="mnuFile">File</Control>
 			<Control ID="mnuImportMovie">Import Movie</Control>
 			<Control ID="mnuExportMovie">Export Movie</Control>
+			<Control ID="mnuCreateSaveState">Create Save State</Control>
 			<Control ID="mnuResumeGameplay">Resume Gameplay</Control>
 			<Control ID="mnuClose">Close</Control>
+
+			<Control ID="mnuOptions">Options</Control>
+			<Control ID="mnuVideoScale">Video Size</Control>
+			<Control ID="mnuScale1x">1x</Control>
+			<Control ID="mnuScale2x">2x</Control>
+			<Control ID="mnuScale3x">3x</Control>
+			<Control ID="mnuScale4x">4x</Control>
+			<Control ID="mnuScale5x">5x</Control>
+			<Control ID="mnuScale6x">6x</Control>
+		</Form>
+		<Form ID="frmSelectExportRange" Title="Export specific range...">
+			<Control ID="lblStartTime">Start time:</Control>
+			<Control ID="lblEndTime">End time:</Control>
+			<Control ID="btnOK">OK</Control>
+			<Control ID="btnCancel">Cancel</Control>
 		</Form>
 		<Form ID="frmHelp" Title="Command-line options">
 			<Control ID="grpExample">Usage Example</Control>
@@ -618,7 +645,6 @@
 			<Control ID="tpgAudioOptions">Audio Options</Control>
 			<Control ID="tpgEmulationOptions">Emulation Options</Control>
 			<Control ID="lblExplanation">This will start Mesen in fullscreen mode with the "MyGame.nes" rom loaded.  It will also use the NTSC filter, set at a 2x scale and configure the Overscan settings.  The "DoNotSaveSettings" flag is used to prevent the command line switches from pernanently altering Mesen's settings.</Control>
-			<Control ID="txtGeneralOptions">/fullscreen - Start Mesen in fullscreen mode&#13;/DoNotSaveSettings - Prevent settings from being saved to the disk (useful to prevent command line options from becoming the default settings)</Control>
 		</Form>
 		<Form ID="frmCopyFiles" Title="Please wait...">
 			<Control ID="lblCopying">Copying:</Control>
@@ -755,7 +781,10 @@
 		<Message ID="SaveToFile">Save to file...</Message>
 
 		<Message ID="MovieSegment">Segment #{0}</Message>
+		<Message ID="MovieExportEntireSegment">Export entire segment</Message>
+		<Message ID="MovieExportSpecificRange">Export specific range...</Message>
 		<Message ID="MovieSaveError">An error occurred while trying to save the movie file.</Message>
+		<Message ID="FileSaveError">An error occurred while trying to save the file.</Message>
 		
 		<Message ID="ClearHistory">Clear History</Message>
 		<Message ID="LastFolderUsed">Last Folder Used</Message>
@@ -763,6 +792,11 @@
 		<Message ID="MouseModeEnabled">Mouse mode enabled - press ESC or pause to release the cursor.</Message>
 		<Message ID="BandaiMicrophone">Bandai Microphone</Message>
 		<Message ID="DatachBarcodeReader">Datach Barcode Reader</Message>
+
+		<Message ID="HelpFullscreen">/fullscreen - Start Mesen in fullscreen mode</Message>
+		<Message ID="HelpDoNotSaveSettings">/DoNotSaveSettings - Prevent settings from being saved to the disk (useful to prevent command line options from becoming the default settings)</Message>
+		<Message ID="HelpRecordMovie">/RecordMovie="filename.mmo" - Start recording a movie after the specified game is loaded.</Message>
+		<Message ID="HelpLoadLastSession">/LoadLastSession - Resumes the game in the state it was left in when it was last played.</Message>
 
 		<Message ID="Resume">Resume</Message>
 		<Message ID="Pause">Pause</Message>
@@ -1087,6 +1121,12 @@
 			<Value ID="SaveRam">Save RAM</Value>
 			<Value ID="Register">Register</Value>
 		</Enum>
+		<Enum ID="PpuAddressType">
+			<Value ID="ChrRom">CHR ROM</Value>
+			<Value ID="ChrRam">CHR RAM</Value>
+			<Value ID="NametableRam">Nametable RAM</Value>
+			<Value ID="PaletteRam">Palette RAM</Value>
+		</Enum>
 		<Enum ID="DebugMemoryType">
 			<Value ID="CpuMemory">CPU Memory</Value>
 			<Value ID="PpuMemory">PPU Memory</Value>
@@ -1099,6 +1139,7 @@
 			<Value ID="WorkRam">Work RAM</Value>
 			<Value ID="SaveRam">Save RAM</Value>
 			<Value ID="InternalRam">NES RAM (2 KB)</Value>
+			<Value ID="NametableRam">Nametable RAM</Value>
 		</Enum>
 		<Enum ID="AddrMode">
 			<Value ID="None">None</Value>
@@ -1182,6 +1223,28 @@
 			<Value ID="Irq">IRQ</Value>
 			<Value ID="SpriteZeroHit">Sprite 0 Hit</Value>
 		</Enum>
+		<Enum ID="BreakpointType">
+			<Value ID="Global">Global</Value>
+			<Value ID="Execute">Execute</Value>
+			<Value ID="ReadRam">CPU Read</Value>
+			<Value ID="WriteRam">CPU Write</Value>
+			<Value ID="ReadVram">PPU Read</Value>
+			<Value ID="WriteVram">PPU Write</Value>
+			<Value ID="DummyReadRam">(Dummy) CPU Read</Value>
+			<Value ID="DummyWriteRam">(Dummy) CPU Write</Value>
+		</Enum>
+		<Enum ID="BreakSource">
+			<Value ID="Breakpoint">Breakpoint</Value>
+			<Value ID="CpuStep">CPU Step</Value>
+			<Value ID="PpuStep">PPU Step</Value>
+			<Value ID="BreakOnBrk">BRK</Value>
+			<Value ID="BreakOnUnofficialOpCode">Unofficial OP code</Value>
+			<Value ID="BreakOnReset">Reset event</Value>
+			<Value ID="BreakOnFocus">Debugger focused</Value>
+			<Value ID="BreakOnUninitMemoryRead">Uninitialized memory read</Value>
+			<Value ID="BreakOnDecayedOamRead">Decayed OAM read</Value>
+			<Value ID="BreakOnCpuCrash">CPU crashed</Value>
+		</Enum>
 		<Enum ID="VsPpuType">
 			<Value ID="RP2C03B">RP2C03B</Value>
 			<Value ID="RP2C03G">RP2C03G</Value>
@@ -1210,8 +1273,8 @@
 			<Value ID="RaidOnBungelingBayProtection">Raid on Bungeling Bay</Value>
 		</Enum>
 		<Enum ID="GameInputType">
-			<Value ID="Default">Default (Standard Controllers)</Value>
-			<Value ID="FamicomControllers">Famicom Controllers</Value>
+			<Value ID="Unspecified">Unspecified</Value>
+			<Value ID="StandardControllers">Standard Controllers</Value>
 			<Value ID="FourScore">Four Score (NES)</Value>
 			<Value ID="FourPlayerAdapter">Four Player Adapter (Famicom)</Value>
 			<Value ID="VsSystem">VS System</Value>

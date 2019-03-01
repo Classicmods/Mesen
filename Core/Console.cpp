@@ -46,6 +46,7 @@
 #include "NotificationManager.h"
 #include "HistoryViewer.h"
 #include "ConsolePauseHelper.h"
+#include "PgoUtilities.h"
 
 Console::Console(shared_ptr<Console> master, EmulationSettings* initialSettings)
 {
@@ -222,13 +223,16 @@ string Console::FindMatchingRom(string romName, HashInfo hashInfo)
 		romFiles.insert(romFiles.end(), files.begin(), files.end());
 	}
 
-	string match = RomLoader::FindMatchingRom(romFiles, romName, hashInfo, true);
-	if(!match.empty()) {
-		return match;
+	if(!romName.empty()) {
+		//Perform quick search based on file name
+		string match = RomLoader::FindMatchingRom(romFiles, romName, hashInfo, true);
+		if(!match.empty()) {
+			return match;
+		}
 	}
 
 	//Perform slow CRC32 search for ROM
-	match = RomLoader::FindMatchingRom(romFiles, romName, hashInfo, false);
+	string match = RomLoader::FindMatchingRom(romFiles, romName, hashInfo, false);
 	if(!match.empty()) {
 		return match;
 	}
@@ -589,7 +593,7 @@ void Console::ResetComponents(bool softReset)
 	_debugHud->ClearScreen();
 
 	_memoryManager->Reset(softReset);
-	if(!_settings->CheckFlag(EmulationFlags::DisablePpuReset) || !softReset) {
+	if(!_settings->CheckFlag(EmulationFlags::DisablePpuReset) || !softReset || IsNsf()) {
 		_ppu->Reset();
 	}
 	_apu->Reset(softReset);
@@ -674,7 +678,7 @@ void Console::RunSingleFrame()
 		}
 	}
 
-	_settings->DisableOverclocking(_disableOcNextFrame || NsfMapper::GetInstance());
+	_settings->DisableOverclocking(_disableOcNextFrame || IsNsf());
 	_disableOcNextFrame = false;
 
 	_systemActionManager->ProcessSystemActions();
@@ -699,11 +703,12 @@ void Console::Run()
 {
 	Timer clockTimer;
 	Timer lastFrameTimer;
+	double frameDurations[60] = {};
+	uint32_t frameDurationIndex = 0;
 	double targetTime;
 	double lastFrameMin = 9999;
 	double lastFrameMax = 0;
 	uint32_t lastFrameNumber = -1;
-	uint32_t lastPauseFrame = 0;
 	double lastDelay = GetFrameDelay();
 
 	_runLock.Acquire();
@@ -743,19 +748,21 @@ void Console::Run()
 					_historyViewer->ProcessEndOfFrame();
 				}
 				_rewindManager->ProcessEndOfFrame();
-				_settings->DisableOverclocking(_disableOcNextFrame || NsfMapper::GetInstance());
+				_settings->DisableOverclocking(_disableOcNextFrame || IsNsf());
 				_disableOcNextFrame = false;
 
 				//Update model (ntsc/pal) and get delay for next frame
 				UpdateNesModel(true);
 				double delay = GetFrameDelay();
 
-				if(_resetRunTimers || delay != lastDelay) {
-					//Target frame rate changed, reset timers
-					//Also needed when resetting, power cycling, pausing or breaking with the debugger
+				if(_resetRunTimers || delay != lastDelay || (clockTimer.GetElapsedMS() - targetTime) > 300) {
+					//Reset the timers, this can happen in 3 scenarios:
+					//1) Target frame rate changed
+					//2) The console was reset/power cycled or the emulation was paused (with or without the debugger)
+					//3) As a satefy net, if we overshoot our target by over 300 milliseconds, the timer is reset, too.
+					//   This can happen when something slows the emulator down severely (or when breaking execution in VS when debugging Mesen itself, etc.)
 					clockTimer.Reset();
 					targetTime = 0;
-					lastPauseFrame = _ppu->GetFrameCount();
 
 					_resetRunTimers = false;
 					lastDelay = delay;
@@ -765,12 +772,16 @@ void Console::Run()
 				
 				bool displayDebugInfo = _settings->CheckFlag(EmulationFlags::DisplayDebugInfo);
 				if(displayDebugInfo) {
-					DisplayDebugInformation(clockTimer, lastFrameTimer, lastFrameMin, lastFrameMax, lastPauseFrame);
+					double lastFrameTime = lastFrameTimer.GetElapsedMS();
+					lastFrameTimer.Reset();
+					frameDurations[frameDurationIndex] = lastFrameTime;
+					frameDurationIndex = (frameDurationIndex + 1) % 60;
+
+					DisplayDebugInformation(lastFrameTime, lastFrameMin, lastFrameMax, frameDurations);
 					if(_slave) {
-						_slave->DisplayDebugInformation(clockTimer, lastFrameTimer, lastFrameMin, lastFrameMax, lastPauseFrame);
+						_slave->DisplayDebugInformation(lastFrameTime, lastFrameMin, lastFrameMax, frameDurations);
 					}
 				}
-				lastFrameTimer.Reset();
 
 				//Sleep until we're ready to start the next frame
 				clockTimer.WaitUntil(targetTime);
@@ -784,7 +795,13 @@ void Console::Run()
 
 					_runLock.Acquire();
 				}
-								
+
+				if(_pauseOnNextFrameRequested) {
+					//Used by "Run Single Frame" option
+					_settings->SetFlags(EmulationFlags::Paused);
+					_pauseOnNextFrameRequested = false;
+				}
+
 				bool pausedRequired = _settings->NeedsPause();
 				if(pausedRequired && !_stop && !_settings->CheckFlag(EmulationFlags::DebuggerWindowEnabled)) {
 					_notificationManager->SendNotification(ConsoleNotificationType::GamePaused);
@@ -913,6 +930,11 @@ bool Console::IsPaused()
 	}
 }
 
+void Console::PauseOnNextFrame()
+{
+	_pauseOnNextFrameRequested = true;
+}
+
 void Console::UpdateNesModel(bool sendNotification)
 {
 	bool configChanged = false;
@@ -1021,7 +1043,6 @@ void Console::LoadState(istream &loadStream, uint32_t stateVersion)
 
 		_debugHud->ClearScreen();
 		_notificationManager->SendNotification(ConsoleNotificationType::StateLoaded);
-		_resetRunTimers = true;
 		UpdateNesModel(false);
 	}
 }
@@ -1041,11 +1062,11 @@ void Console::BreakIfDebugging()
 {
 	shared_ptr<Debugger> debugger = _debugger;
 	if(debugger) {
-		debugger->BreakImmediately();
+		debugger->BreakImmediately(BreakSource::BreakOnCpuCrash);
 	} else if(_settings->CheckFlag(EmulationFlags::BreakOnCrash)) {
 		//When "Break on Crash" is enabled, open the debugger and break immediately if a crash occurs
 		debugger = GetDebugger(true);
-		debugger->BreakImmediately();
+		debugger->BreakImmediately(BreakSource::BreakOnCpuCrash);
 	}
 }
 
@@ -1066,6 +1087,9 @@ std::shared_ptr<Debugger> Console::GetDebugger(bool autoStart)
 
 void Console::StopDebugger()
 {
+	if(_debugger) {
+		_debugger->ReleaseDebugger(_running);
+	}
 	_debugger.reset();
 }
 
@@ -1219,6 +1243,20 @@ bool Console::UpdateHdPackMode()
 	return modeChanged;
 }
 
+uint32_t Console::GetDipSwitchCount()
+{
+	shared_ptr<ControlManager> controlManager = _controlManager;
+	shared_ptr<BaseMapper> mapper = _mapper;
+	
+	if(std::dynamic_pointer_cast<VsControlManager>(controlManager)) {
+		return IsDualSystem() ? 16 : 8;
+	} else if(mapper) {
+		return mapper->GetMapperDipSwitchCount();
+	}
+
+	return 0;
+}
+
 ConsoleFeatures Console::GetAvailableFeatures()
 {
 	ConsoleFeatures features = ConsoleFeatures::None;
@@ -1314,6 +1352,11 @@ bool Console::IsRecordingTapeFile()
 	return false;
 }
 
+bool Console::IsNsf()
+{
+	return std::dynamic_pointer_cast<NsfMapper>(_mapper) != nullptr;
+}
+
 void Console::CopyRewindData(shared_ptr<Console> sourceConsole)
 {
 	sourceConsole->Pause();
@@ -1365,7 +1408,7 @@ void Console::DebugAddTrace(const char * log)
 void Console::DebugProcessPpuCycle()
 {
 #ifndef LIBRETRO
-	if(_debugger) {
+	if(_debugger && _debugger->IsPpuCycleToProcess()) {
 		_debugger->ProcessPpuCycle();
 	}
 #endif
@@ -1428,7 +1471,7 @@ void Console::DebugProcessVramWriteOperation(uint16_t addr, uint8_t & value)
 #endif
 }
 
-void Console::DisplayDebugInformation(Timer &clockTimer, Timer &lastFrameTimer, double &lastFrameMin, double &lastFrameMax, uint32_t lastPauseFrame)
+void Console::DisplayDebugInformation(double lastFrame, double &lastFrameMin, double &lastFrameMax, double frameDurations[60])
 {
 	AudioStatistics stats = _soundMixer->GetStatistics();
 	
@@ -1453,11 +1496,14 @@ void Console::DisplayDebugInformation(Timer &clockTimer, Timer &lastFrameTimer, 
 	_debugHud->DrawRectangle(132, 8, 115, 49, 0xFFFFFF, false, 1, startFrame);
 	_debugHud->DrawString(134, 10, "Video Stats", 0xFFFFFF, 0xFF000000, 1, startFrame);
 
-	ss = std::stringstream();
-	ss << "FPS: " << std::fixed << std::setprecision(4) << ((startFrame - lastPauseFrame) / (clockTimer.GetElapsedMS() / 1000));
-	_debugHud->DrawString(134, 21, ss.str(), 0xFFFFFF, 0xFF000000, 1, startFrame);
+	double totalDuration = 0;
+	for(int i = 0; i < 60; i++) {
+		totalDuration += frameDurations[i];
+	}
 
-	double lastFrame = lastFrameTimer.GetElapsedMS();
+	ss = std::stringstream();
+	ss << "FPS: " << std::fixed << std::setprecision(4) << (1000 / (totalDuration/60));
+	_debugHud->DrawString(134, 21, ss.str(), 0xFFFFFF, 0xFF000000, 1, startFrame);
 
 	ss = std::stringstream();
 	ss << "Last Frame: " << std::fixed << std::setprecision(2) << lastFrame << " ms";
@@ -1480,3 +1526,9 @@ void Console::DisplayDebugInformation(Timer &clockTimer, Timer &lastFrameTimer, 
 	_debugHud->DrawString(134, 48, ss.str(), 0xFFFFFF, 0xFF000000, 1, startFrame);
 }
 
+void Console::ExportStub()
+{
+	//Force the compiler to export the PgoRunTest function - otherwise it seems to be ignored since it is unused
+	vector<string> testRoms;
+	PgoRunTest(testRoms, true);
+}
